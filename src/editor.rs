@@ -1,6 +1,8 @@
-use std::io::{self, Write};
+use std::io;
 
-use crossterm::{cursor::{MoveDown, MoveLeft, MoveRight, MoveTo, MoveUp}, event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, execute, queue, style::Print, terminal::{self, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen}};
+use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, terminal};
+
+use crate::{commands::Command::{self, *}, terminal::CommandExecutor};
 
 
 pub struct Editor {
@@ -20,15 +22,14 @@ impl Editor {
     }
 
     fn event_loop() -> io::Result<()> {
-        let mut stdout = io::stdout();
         loop {
             match event::read()? {
                 Event::Key(KeyEvent { kind: KeyEventKind::Press, code, .. }) => match code {
                     KeyCode::Esc => break Ok(()),
-                    KeyCode::Right =>  { execute!(stdout, MoveRight(1))?; }
-                    KeyCode::Left =>  { execute!(stdout, MoveLeft(1))?; }
-                    KeyCode::Up =>  { execute!(stdout, MoveUp(1))?; }
-                    KeyCode::Down =>  { execute!(stdout, MoveDown(1))?; }
+                    KeyCode::Right =>  MoveRight(1).execute()?,
+                    KeyCode::Left =>  MoveLeft(1).execute()?,
+                    KeyCode::Up =>  MoveUp(1).execute()?,
+                    KeyCode::Down =>  MoveDown(1).execute()?,
                     _ => {}
                 },
                 _ => {}
@@ -37,25 +38,22 @@ impl Editor {
     }
 
     fn refresh(rows: &Vec<String>) -> io::Result<()> {
-        let mut stdout = io::stdout();
-        queue!(stdout, Clear(ClearType::All))?;
+        let mut commands = vec![Command::Clear];
 
         for (y, row) in rows.iter().enumerate() {
-            queue!(stdout,
-                MoveTo(0, y as u16),
-                Print(row)
-            )?;
+            commands.push(Command::MoveTo(1, y as u16 + 1));
+            commands.push(Command::Print(row.to_string()));
         }
-        stdout.flush()
+        commands.execute()
     }
 
     fn open() -> io::Result<()> {
         terminal::enable_raw_mode()?;
-        execute!(io::stdout(), EnterAlternateScreen)
+        EnterAlternateScreen.execute()
     }
 
     fn close() -> io::Result<()> {
         terminal::disable_raw_mode()?;
-        execute!(io::stdout(), LeaveAlternateScreen)
+        LeaveAlternateScreen.execute()
     }
 }
