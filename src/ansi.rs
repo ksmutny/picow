@@ -8,7 +8,7 @@ macro_rules! csi {
 
 pub fn ansi(command: Command) -> String {
     match command {
-        Clear => csi!("[2J{}", ansi(MoveTo(0, 0))),
+        Clear => csi!("2J{}", ansi(MoveTo(1, 1))),
         Print(s) => s,
 
         MoveTo(x, y) => csi!("{};{}H", y, x),
@@ -17,7 +17,7 @@ pub fn ansi(command: Command) -> String {
         MoveRight(n) => csi!("{}C", n),
         MoveLeft(n) => csi!("{}D", n),
 
-        EnterAlternateScreen => csi!("?1049h{}", ansi(MoveTo(0, 0))),
+        EnterAlternateScreen => csi!("?1049h{}", ansi(MoveTo(1  , 1))),
         LeaveAlternateScreen => csi!("?1049l"),
     }
 }
