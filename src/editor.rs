@@ -34,6 +34,7 @@ impl Editor {
                 },
                 _ => {}
             }
+            Editor::status_bar()?;
         }
     }
 
@@ -44,7 +45,22 @@ impl Editor {
             commands.push(Command::MoveTo(1, y as u16 + 1));
             commands.push(Command::Print(row.to_string()));
         }
-        commands.execute()
+        commands.execute()?;
+        Editor::status_bar()
+    }
+
+    fn status_bar() -> io::Result<()> {
+        let (width, height) = winapi::terminal_size()?;
+        let (x, y) = winapi::cursor_position()?;
+
+        let status = format!("{}x{} | {} {}", width, height, x, y);
+
+        vec![
+            MoveTo(1, height),
+            ClearLine,
+            Print(status),
+            MoveTo(x, y)
+        ].execute()
     }
 
     fn open() -> io::Result<()> {

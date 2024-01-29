@@ -1,5 +1,6 @@
 pub enum Command {
     Clear,
+    ClearLine,
     Print(String),
 
     MoveTo(u16, u16),

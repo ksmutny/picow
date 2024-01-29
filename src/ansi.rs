@@ -9,6 +9,7 @@ macro_rules! csi {
 pub fn ansi(command: Command) -> String {
     match command {
         Clear => csi!("2J{}", ansi(MoveTo(1, 1))),
+        ClearLine => csi!("2K"),
         Print(s) => s,
 
         MoveTo(x, y) => csi!("{};{}H", y, x),
