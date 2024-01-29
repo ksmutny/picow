@@ -1,8 +1,8 @@
 use std::io;
 
-use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, terminal};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 
-use crate::{commands::Command::{self, *}, terminal::CommandExecutor};
+use crate::{commands::Command::{self, *}, terminal::CommandExecutor, winapi};
 
 
 pub struct Editor {
@@ -48,12 +48,12 @@ impl Editor {
     }
 
     fn open() -> io::Result<()> {
-        terminal::enable_raw_mode()?;
+        winapi::enable_raw_mode()?;
         EnterAlternateScreen.execute()
     }
 
     fn close() -> io::Result<()> {
-        terminal::disable_raw_mode()?;
+        winapi::disable_raw_mode()?;
         LeaveAlternateScreen.execute()
     }
 }
