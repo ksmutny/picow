@@ -39,8 +39,8 @@ impl Editor {
                         (Up, CTRL) => self.scroll(-1)?,
                         (Down, CTRL) => self.scroll(1)?,
 
-                        (Right, _) =>  MoveRight(1).queue()?,
-                        (Left, _) =>  MoveLeft(1).queue()?,
+                        (Right, _) =>  self.move_right(1)?,
+                        (Left, _) =>  self.move_left(1)?,
                         (Up, _) =>  self.move_up(1)?,
                         (Down, _) =>  self.move_down(1)?,
                         (Home, _) =>  self.move_home_line()?,
@@ -97,6 +97,27 @@ impl Editor {
         }
     }
 
+    fn move_right(&mut self, n: u16) -> io::Result<()> {
+        let (x, y) = self.cursor();
+        let row_len = self.line_at(y).len() as u16;
+
+        if x + n > row_len + 1 {
+            self.move_to(1, y + 1)
+        } else {
+            MoveRight(n).queue()
+        }
+    }
+
+    fn move_left(&mut self, n: u16) -> io::Result<()> {
+        let (x, y) = self.cursor();
+
+        if x <= n && self.curr_line_idx() > 0 {
+            self.move_to(self.line_at(y - 1).len() as u16 + 1, y - 1)
+        } else {
+            MoveLeft(n).queue()
+        }
+    }
+
     fn move_home_line(&self) -> io::Result<()> {
         self.move_to(1, self.cursor_y())
     }
@@ -117,6 +138,10 @@ impl Editor {
         let new_y = (y as i16 - delta).clamp(1, self.viewport_height() as i16 - 1) as u16;
 
         MoveTo(x, new_y).queue()
+    }
+
+    fn curr_line_idx(&self) -> usize {
+        (self.top + self.cursor_y() - 1) as usize
     }
 
     fn line_at(&self, y: u16) -> &str {
