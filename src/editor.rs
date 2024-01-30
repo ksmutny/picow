@@ -30,10 +30,10 @@ impl Editor {
                 Event::Key(KeyEvent { kind: KeyEventKind::Press, code, .. }) => match code {
                     KeyCode::Esc => break Ok(()),
 
-                    KeyCode::Right =>  MoveRight(1).execute()?,
-                    KeyCode::Left =>  MoveLeft(1).execute()?,
-                    KeyCode::Up =>  MoveUp(1).execute()?,
-                    KeyCode::Down =>  MoveDown(1).execute()?,
+                    KeyCode::Right =>  MoveRight(1).queue()?,
+                    KeyCode::Left =>  MoveLeft(1).queue()?,
+                    KeyCode::Up =>  MoveUp(1).queue()?,
+                    KeyCode::Down =>  MoveDown(1).queue()?,
                     KeyCode::Home =>  self.move_home_line()?,
                     KeyCode::End =>  self.move_end_line()?,
                     _ => {}
@@ -47,14 +47,14 @@ impl Editor {
 
     fn move_home_line(&self) -> io::Result<()> {
         let (_, y) = self.cursor()?;
-        MoveTo(1, y).execute()
+        MoveTo(1, y).queue()
     }
 
     fn move_end_line(&self) -> io::Result<()> {
         let (_, y) = self.cursor()?;
         let row_len = self.rows[y as usize - 1].len() as u16;
 
-        MoveTo(row_len + 1, y).execute()
+        MoveTo(row_len + 1, y).queue()
     }
 
     fn refresh(&self) -> io::Result<()> {
@@ -64,8 +64,7 @@ impl Editor {
             commands.push(Command::MoveTo(1, y as u16 + 1));
             commands.push(Command::Print(row.to_string()));
         }
-        commands.execute()?;
-        self.status_bar()
+        commands.queue()
     }
 
     fn resize(&mut self, size: Coordinates) -> io::Result<()> {
@@ -74,6 +73,8 @@ impl Editor {
     }
 
     fn status_bar(&self) -> io::Result<()> {
+        // TODO Seems whatever is queued before calling terminal::cursor_position() gets discarded. Investigate.
+        terminal::flush()?;
         let (width, height) = self.size;
         let (x, y) = terminal::cursor_position()?;
 

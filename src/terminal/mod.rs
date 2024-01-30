@@ -33,10 +33,8 @@ impl CommandExecutor for Vec<Command> {
         Ok(())
     }
     fn execute(self) -> io::Result<()> {
-        for command in self {
-            command.execute()?;
-        }
-        Ok(())
+        self.queue()?;
+        flush()
     }
 }
 
