@@ -52,7 +52,7 @@ pub fn disable_raw_mode() -> io::Result<()> {
     winapi::disable_raw_mode()
 }
 
-type Coordinates = (u16, u16);
+pub type Coordinates = (u16, u16);
 
 pub fn terminal_size() -> io::Result<Coordinates> {
     winapi::terminal_size()

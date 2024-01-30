@@ -6,23 +6,25 @@ use crate::terminal::{self, *, commands::Command::{self, *}};
 
 
 pub struct Editor {
+    size: Coordinates,
     rows: Vec<String>,
     delimiter: String
 }
 
 impl Editor {
     pub fn new(rows: Vec<String>, delimiter: String) -> Self {
-        Self { rows, delimiter }
+        let size = terminal::terminal_size().unwrap();
+        Self { rows, delimiter, size }
     }
 
-    pub fn run(&self) -> io::Result<()> {
+    pub fn run(&mut self) -> io::Result<()> {
         Editor::open()?;
         self.refresh()?;
         self.event_loop()?;
         Editor::close()
     }
 
-    fn event_loop(&self) -> io::Result<()> {
+    fn event_loop(&mut self) -> io::Result<()> {
         loop {
             match event::read()? {
                 Event::Key(KeyEvent { kind: KeyEventKind::Press, code, .. }) => match code {
@@ -33,6 +35,7 @@ impl Editor {
                     KeyCode::Down =>  MoveDown(1).execute()?,
                     _ => {}
                 },
+                Event::Resize(width, height) => self.resize((width, height))?,
                 _ => {}
             }
             self.status_bar()?;
@@ -50,8 +53,13 @@ impl Editor {
         self.status_bar()
     }
 
+    fn resize(&mut self, size: Coordinates) -> io::Result<()> {
+        self.size = size;
+        self.refresh()
+    }
+
     fn status_bar(&self) -> io::Result<()> {
-        let (width, height) = terminal::terminal_size()?;
+        let (width, height) = self.size;
         let (x, y) = terminal::cursor_position()?;
 
         let status = format!("{}x{} | {} {} | {}", width, height, x, y, self.delimiter_label());
