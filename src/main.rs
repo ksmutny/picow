@@ -1,7 +1,5 @@
-mod ansi;
 mod file;
 mod editor;
-mod commands;
 mod terminal;
 
 fn main() -> std::io::Result<()> {

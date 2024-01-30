@@ -1,8 +1,11 @@
+mod ansi;
+pub mod commands;
 mod winapi;
 
 use std::io::{self, Write};
 
-use crate::{ansi::ansi, commands::Command};
+use ansi::ansi;
+use commands::Command;
 
 
 pub trait CommandExecutor {

@@ -2,7 +2,7 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 
-use crate::{commands::Command::{self, *}, terminal::{self, *}};
+use crate::terminal::{self, *, commands::Command::{self, *}};
 
 
 pub struct Editor {

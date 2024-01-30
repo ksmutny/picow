@@ -1,4 +1,4 @@
-use crate::commands::Command::{self, *};
+use crate::terminal::commands::Command::{self, *};
 
 macro_rules! csi {
     ($($arg:tt)*) => {{
