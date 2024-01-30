@@ -2,7 +2,7 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 
-use crate::{commands::Command::{self, *}, terminal::CommandExecutor, winapi};
+use crate::{commands::Command::{self, *}, terminal::{self, *}};
 
 
 pub struct Editor {
@@ -51,8 +51,8 @@ impl Editor {
     }
 
     fn status_bar(&self) -> io::Result<()> {
-        let (width, height) = winapi::terminal_size()?;
-        let (x, y) = winapi::cursor_position()?;
+        let (width, height) = terminal::terminal_size()?;
+        let (x, y) = terminal::cursor_position()?;
 
         let status = format!("{}x{} | {} {} | {}", width, height, x, y, self.delimiter_label());
 
@@ -76,12 +76,12 @@ impl Editor {
     }
 
     fn open() -> io::Result<()> {
-        winapi::enable_raw_mode()?;
+        terminal::enable_raw_mode()?;
         EnterAlternateScreen.execute()
     }
 
     fn close() -> io::Result<()> {
-        winapi::disable_raw_mode()?;
+        terminal::disable_raw_mode()?;
         LeaveAlternateScreen.execute()
     }
 }
