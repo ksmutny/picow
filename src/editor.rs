@@ -2,7 +2,7 @@ use std::{cmp, io};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
-use crate::terminal::{self, *, commands::Command::{self, *}};
+use crate::terminal::{self, *, commands::Command};
 
 
 pub struct Editor {
@@ -27,7 +27,7 @@ impl Editor {
     pub fn run(&mut self) -> io::Result<()> {
         Editor::open()?;
         self.refresh()?;
-        MoveTo(1, 1).execute()?;
+        Command::MoveTo(1, 1).execute()?;
         self.event_loop()?;
         Editor::close()
     }
@@ -97,7 +97,7 @@ impl Editor {
         let eol = self.line_at(new_y).len() as u16 + 1;
         let new_x = x.clamp(1, eol);
 
-        MoveTo(new_x, new_y).queue()
+        Command::MoveTo(new_x, new_y).queue()
     }
 
     fn move_up(&mut self, n: u16) -> io::Result<()> {
@@ -137,7 +137,7 @@ impl Editor {
         if x + n > row_len + 1 {
             self.move_to(1, y + 1)
         } else {
-            MoveRight(n).queue()
+            Command::MoveRight(n).queue()
         }
     }
 
@@ -147,7 +147,7 @@ impl Editor {
         if x <= n && self.curr_line_idx() > 0 {
             self.move_to(self.line_at(y - 1).len() as u16 + 1, y - 1)
         } else {
-            MoveLeft(n).queue()
+            Command::MoveLeft(n).queue()
         }
     }
 
@@ -185,7 +185,7 @@ impl Editor {
 
         let new_y = (y as i16 - delta).clamp(1, self.viewport_height() as i16 - 1) as u16;
 
-        MoveTo(x, new_y).queue()
+        Command::MoveTo(x, new_y).queue()
     }
 
     fn curr_line_idx(&self) -> usize {
@@ -223,10 +223,10 @@ impl Editor {
         let status = format!("{}x{} | {} {} | {} | {}", width, height, x, y, self.top, self.delimiter_label());
 
         vec![
-            MoveTo(1, self.terminal_height()),
-            ClearLine,
-            Print(status),
-            MoveTo(x, y)
+            Command::MoveTo(1, self.terminal_height()),
+            Command::ClearLine,
+            Command::Print(status),
+            Command::MoveTo(x, y)
         ].queue()
     }
 
@@ -255,11 +255,11 @@ impl Editor {
 
     fn open() -> io::Result<()> {
         terminal::enable_raw_mode()?;
-        EnterAlternateScreen.execute()
+        Command::EnterAlternateScreen.execute()
     }
 
     fn close() -> io::Result<()> {
         terminal::disable_raw_mode()?;
-        LeaveAlternateScreen.execute()
+        Command::LeaveAlternateScreen.execute()
     }
 }
