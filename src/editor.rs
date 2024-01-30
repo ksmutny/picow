@@ -38,6 +38,8 @@ impl Editor {
 
                         (Up, CTRL) => self.scroll(-1)?,
                         (Down, CTRL) => self.scroll(1)?,
+                        (Home, CTRL) =>  self.move_home_document()?,
+                        (End, CTRL) =>  self.move_end_document()?,
 
                         (Right, _) =>  self.move_right(1)?,
                         (Left, _) =>  self.move_left(1)?,
@@ -127,6 +129,21 @@ impl Editor {
         let row_len = self.line_at(y).len() as u16;
 
         self.move_to(row_len + 1, y)
+    }
+
+    fn move_home_document(&mut self) -> io::Result<()> {
+        self.top = 0;
+        self.refresh()?;
+        self.move_to(1, 1)
+    }
+
+    fn move_end_document(&mut self) -> io::Result<()> {
+        self.top = cmp::max(self.top, self.rows.len() as u16 - self.viewport_height());
+        let eof_y = self.rows.len() as u16 - self.top;
+        let eof_x = self.line_at(eof_y).len() as u16 + 1;
+
+        self.refresh()?;
+        self.move_to(eof_x, eof_y)
     }
 
     fn scroll(&mut self, delta: i16) -> io::Result<()> {
