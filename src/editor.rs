@@ -9,13 +9,19 @@ pub struct Editor {
     terminal_size: Coordinates,
     top: u16,
     rows: Vec<String>,
-    delimiter: String
+    delimiter: String,
+    vertical_nav: VerticalNavigation,
+}
+
+struct VerticalNavigation {
+    in_progress: bool,
+    last_x: u16,
 }
 
 impl Editor {
     pub fn new(rows: Vec<String>, delimiter: String) -> Self {
         let terminal_size = terminal::terminal_size().unwrap();
-        Self { rows, delimiter, terminal_size, top: 0 }
+        Self { rows, delimiter, terminal_size, top: 0, vertical_nav: VerticalNavigation { in_progress: false, last_x: 0 } }
     }
 
     pub fn run(&mut self) -> io::Result<()> {
@@ -32,6 +38,8 @@ impl Editor {
                 Event::Key(KeyEvent { kind: KeyEventKind::Press, code, modifiers, .. }) => {
                     use KeyCode::*;
                     const CTRL: KeyModifiers = KeyModifiers::CONTROL;
+
+                    self.update_vertical_nav(code);
 
                     match (code, modifiers) {
                         (Esc, _) => break Ok(()),
@@ -61,6 +69,27 @@ impl Editor {
         }
     }
 
+    fn update_vertical_nav(&mut self, key_code: KeyCode) {
+        use KeyCode::*;
+
+        match key_code {
+            Up | Down | PageUp | PageDown =>
+                if !self.vertical_nav.in_progress {
+                    self.vertical_nav.in_progress = true;
+                    self.vertical_nav.last_x = self.cursor_x();
+                },
+            _ => self.vertical_nav.in_progress = false
+        }
+    }
+
+    fn vertical_nav_x(&self, x: u16) -> u16 {
+        if self.vertical_nav.in_progress {
+            self.vertical_nav.last_x
+        } else {
+            x
+        }
+    }
+
     fn move_to(&self, x: u16, y: u16) -> io::Result<()> {
         let eof_y = self.rows.len() as u16 - self.top;
         let new_y = y.clamp(1, eof_y);
@@ -73,18 +102,20 @@ impl Editor {
 
     fn move_up(&mut self, n: u16) -> io::Result<()> {
         let (x, y) = self.cursor();
+        let new_x = self.vertical_nav_x(x);
 
         if y == 1 && self.top > 0 {
             self.scroll(-(n as i16))?;
-            self.move_to(x, y)
+            self.move_to(new_x, y)
         } else {
             let delta = n.clamp(1, y);
-            self.move_to(x, y - delta)
+            self.move_to(new_x, y - delta)
         }
     }
 
     fn move_down(&mut self, n: u16) -> io::Result<()> {
         let (x, y) = self.cursor();
+        let new_x = self.vertical_nav_x(x);
         let height = self.viewport_height();
 
         let scroll_below_viewport = (y + n) > height;
@@ -92,10 +123,10 @@ impl Editor {
 
         if scroll_below_viewport && rows_below_viewport {
             self.scroll(n as i16)?;
-            self.move_to(x, y)
+            self.move_to(new_x, y)
         } else {
             let delta = cmp::min(y + n, height) - y;
-            self.move_to(x, y + delta)
+            self.move_to(new_x, y + delta)
         }
     }
 
@@ -214,6 +245,7 @@ impl Editor {
         terminal::cursor_position().unwrap()
     }
 
+    fn cursor_x(&self) -> u16 { self.cursor().0 }
     fn cursor_y(&self) -> u16 { self.cursor().1 }
 
     fn terminal_height(&self) -> u16 { self.terminal_size.1 }
