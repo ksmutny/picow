@@ -21,6 +21,7 @@ impl Editor {
     pub fn run(&mut self) -> io::Result<()> {
         Editor::open()?;
         self.refresh()?;
+        MoveTo(1, 1).execute()?;
         self.event_loop()?;
         Editor::close()
     }
@@ -58,14 +59,25 @@ impl Editor {
         }
     }
 
+    fn move_to(&self, x: u16, y: u16) -> io::Result<()> {
+        let eof_y = self.rows.len() as u16 - self.top;
+        let new_y = y.clamp(1, eof_y);
+
+        let eol = self.line_at(new_y).len() as u16 + 1;
+        let new_x = x.clamp(1, eol);
+
+        MoveTo(new_x, new_y).queue()
+    }
+
     fn move_up(&mut self, n: u16) -> io::Result<()> {
         let (x, y) = self.cursor();
 
         if y == 1 && self.top > 0 {
             self.scroll(-(n as i16))?;
-            MoveTo(x, y).queue()
+            self.move_to(x, y)
         } else {
-            MoveUp(n).queue()
+            let delta = n.clamp(1, y);
+            self.move_to(x, y - delta)
         }
     }
 
@@ -78,24 +90,22 @@ impl Editor {
 
         if scroll_below_viewport && rows_below_viewport {
             self.scroll(n as i16)?;
-            MoveTo(x, y).queue()
-        } else if !scroll_below_viewport {
-            let delta = cmp::min(y + n, height) - y;
-            MoveDown(delta).queue()
+            self.move_to(x, y)
         } else {
-            Ok(())
+            let delta = cmp::min(y + n, height) - y;
+            self.move_to(x, y + delta)
         }
     }
 
     fn move_home_line(&self) -> io::Result<()> {
-        MoveTo(1, self.cursor_y()).queue()
+        self.move_to(1, self.cursor_y())
     }
 
     fn move_end_line(&self) -> io::Result<()> {
         let y = self.cursor_y();
-        let row_len = self.rows[y as usize - 1].len() as u16;
+        let row_len = self.line_at(y).len() as u16;
 
-        MoveTo(row_len + 1, y).queue()
+        self.move_to(row_len + 1, y)
     }
 
     fn scroll(&mut self, delta: i16) -> io::Result<()> {
@@ -108,6 +118,11 @@ impl Editor {
 
         MoveTo(x, new_y).queue()
     }
+
+    fn line_at(&self, y: u16) -> &str {
+        &self.rows[(self.top + y - 1) as usize]
+    }
+
 
     fn refresh(&self) -> io::Result<()> {
         let mut commands = vec![Command::Clear];
