@@ -29,10 +29,13 @@ impl Editor {
             match event::read()? {
                 Event::Key(KeyEvent { kind: KeyEventKind::Press, code, .. }) => match code {
                     KeyCode::Esc => break Ok(()),
+
                     KeyCode::Right =>  MoveRight(1).execute()?,
                     KeyCode::Left =>  MoveLeft(1).execute()?,
                     KeyCode::Up =>  MoveUp(1).execute()?,
                     KeyCode::Down =>  MoveDown(1).execute()?,
+                    KeyCode::Home =>  self.move_home_line()?,
+                    KeyCode::End =>  self.move_end_line()?,
                     _ => {}
                 },
                 Event::Resize(width, height) => self.resize((width, height))?,
@@ -40,6 +43,18 @@ impl Editor {
             }
             self.status_bar()?;
         }
+    }
+
+    fn move_home_line(&self) -> io::Result<()> {
+        let (_, y) = self.cursor()?;
+        MoveTo(1, y).execute()
+    }
+
+    fn move_end_line(&self) -> io::Result<()> {
+        let (_, y) = self.cursor()?;
+        let row_len = self.rows[y as usize - 1].len() as u16;
+
+        MoveTo(row_len + 1, y).execute()
     }
 
     fn refresh(&self) -> io::Result<()> {
@@ -81,6 +96,10 @@ impl Editor {
             LF => "LF",
             _ => "?"
         }
+    }
+
+    fn cursor(&self) -> io::Result<Coordinates> {
+        terminal::cursor_position()
     }
 
     fn open() -> io::Result<()> {
