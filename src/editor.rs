@@ -100,10 +100,11 @@ impl Editor {
 
     fn scroll(&mut self, delta: i16) -> io::Result<()> {
         let (x, y) = self.cursor();
+
         self.top = (self.top as i16 + delta).clamp(0, self.rows.len() as i16) as u16;
         self.refresh()?;
 
-        let new_y = (y as i16 - delta).clamp(1, self.terminal_size.1 as i16 - 1) as u16;
+        let new_y = (y as i16 - delta).clamp(1, self.viewport_height() as i16 - 1) as u16;
 
         MoveTo(x, new_y).queue()
     }
@@ -111,7 +112,7 @@ impl Editor {
     fn refresh(&self) -> io::Result<()> {
         let mut commands = vec![Command::Clear];
 
-        for i in 0..self.terminal_size.1 - 1 {
+        for i in 0..self.viewport_height() {
             if let Some(row) = self.rows.get((self.top + i) as usize) {
                 commands.push(Command::MoveTo(1, i + 1));
                 commands.push(Command::Print(row.to_string()));
