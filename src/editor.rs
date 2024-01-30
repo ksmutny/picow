@@ -6,22 +6,23 @@ use crate::{commands::Command::{self, *}, terminal::CommandExecutor, winapi};
 
 
 pub struct Editor {
-    rows: Vec<String>
+    rows: Vec<String>,
+    delimiter: String
 }
 
 impl Editor {
-    pub fn new(rows: Vec<String>) -> Self {
-        Self { rows }
+    pub fn new(rows: Vec<String>, delimiter: String) -> Self {
+        Self { rows, delimiter }
     }
 
     pub fn run(&self) -> io::Result<()> {
         Editor::open()?;
-        Editor::refresh(&self.rows)?;
-        Editor::event_loop()?;
+        self.refresh()?;
+        self.event_loop()?;
         Editor::close()
     }
 
-    fn event_loop() -> io::Result<()> {
+    fn event_loop(&self) -> io::Result<()> {
         loop {
             match event::read()? {
                 Event::Key(KeyEvent { kind: KeyEventKind::Press, code, .. }) => match code {
@@ -34,26 +35,26 @@ impl Editor {
                 },
                 _ => {}
             }
-            Editor::status_bar()?;
+            self.status_bar()?;
         }
     }
 
-    fn refresh(rows: &Vec<String>) -> io::Result<()> {
+    fn refresh(&self) -> io::Result<()> {
         let mut commands = vec![Command::Clear];
 
-        for (y, row) in rows.iter().enumerate() {
+        for (y, row) in self.rows.iter().enumerate() {
             commands.push(Command::MoveTo(1, y as u16 + 1));
             commands.push(Command::Print(row.to_string()));
         }
         commands.execute()?;
-        Editor::status_bar()
+        self.status_bar()
     }
 
-    fn status_bar() -> io::Result<()> {
+    fn status_bar(&self) -> io::Result<()> {
         let (width, height) = winapi::terminal_size()?;
         let (x, y) = winapi::cursor_position()?;
 
-        let status = format!("{}x{} | {} {}", width, height, x, y);
+        let status = format!("{}x{} | {} {} | {}", width, height, x, y, self.delimiter_label());
 
         vec![
             MoveTo(1, height),
@@ -61,6 +62,17 @@ impl Editor {
             Print(status),
             MoveTo(x, y)
         ].execute()
+    }
+
+    fn delimiter_label(&self) -> &str {
+        use crate::file::{CRLF, CR, LF};
+
+        match self.delimiter.as_str() {
+            CRLF => "CRLF",
+            CR => "CR",
+            LF => "LF",
+            _ => "?"
+        }
     }
 
     fn open() -> io::Result<()> {

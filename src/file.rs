@@ -8,13 +8,13 @@ pub fn read_file(path: &str) -> Result<(Vec<String>, String), Error> {
     Ok((lines, line_delimiter))
 }
 
-const CRFL: &str = "\r\n";
-const LF: &str = "\n";
-const CR: &str = "\r";
+pub const CRLF: &str = "\r\n";
+pub const LF: &str = "\n";
+pub const CR: &str = "\r";
 
 fn detect_line_delimiter(file_content: &str) -> String {
-    let delimiter = if file_content.contains(CRFL) {
-        CRFL
+    let delimiter = if file_content.contains(CRLF) {
+        CRLF
     } else if file_content.contains(LF) {
         LF
     } else if file_content.contains(CR) {
