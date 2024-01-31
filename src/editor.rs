@@ -27,7 +27,7 @@ impl Editor {
     pub fn run(&mut self) -> io::Result<()> {
         Editor::open()?;
         self.refresh()?;
-        Command::MoveTo(1, 1).execute()?;
+        self.move_to(1, 1)?;
         self.event_loop()?;
         Editor::close()
     }
@@ -137,7 +137,7 @@ impl Editor {
         if x + n > row_len + 1 {
             self.move_to(1, y + 1)
         } else {
-            Command::MoveRight(n).queue()
+            self.move_to(x + n, y)
         }
     }
 
@@ -147,7 +147,7 @@ impl Editor {
         if x <= n && self.curr_line_idx() > 0 {
             self.move_to(self.line_at(y - 1).len() as u16 + 1, y - 1)
         } else {
-            Command::MoveLeft(n).queue()
+            self.move_to(x - n, y)
         }
     }
 
@@ -185,7 +185,7 @@ impl Editor {
 
         let new_y = (y as i16 - delta).clamp(1, self.viewport_height() as i16 - 1) as u16;
 
-        Command::MoveTo(x, new_y).queue()
+        self.move_to(x, new_y)
     }
 
     fn curr_line_idx(&self) -> usize {
