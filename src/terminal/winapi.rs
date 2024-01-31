@@ -1,41 +1,50 @@
 use std::io::{self, Error};
 
-use winapi::um::consoleapi::{GetConsoleMode, SetConsoleMode};
-use winapi::um::handleapi::INVALID_HANDLE_VALUE;
-use winapi::um::processenv::GetStdHandle;
-use winapi::um::winbase::{STD_INPUT_HANDLE, STD_OUTPUT_HANDLE};
-use winapi::um::wincon::{GetConsoleScreenBufferInfo, CONSOLE_SCREEN_BUFFER_INFO, ENABLE_PROCESSED_INPUT, ENABLE_LINE_INPUT, ENABLE_ECHO_INPUT};
+use winapi::um::{
+    consoleapi::{GetConsoleMode, SetConsoleMode},
+    handleapi::INVALID_HANDLE_VALUE,
+    processenv::GetStdHandle,
+    winbase::{STD_INPUT_HANDLE, STD_OUTPUT_HANDLE},
+    wincon::{GetConsoleScreenBufferInfo, CONSOLE_SCREEN_BUFFER_INFO, ENABLE_AUTO_POSITION, ENABLE_ECHO_INPUT, ENABLE_LINE_INPUT, ENABLE_MOUSE_INPUT, ENABLE_PROCESSED_INPUT, ENABLE_WINDOW_INPUT},
+    winnt::HANDLE
+};
 
 
-pub fn enable_raw_mode() -> io::Result<()> {
-    modify_console_mode(|mode| mode & !(ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT))
+const CONSOLE_MODE: u32 =
+    ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_WINDOW_INPUT | ENABLE_MOUSE_INPUT | ENABLE_AUTO_POSITION;
+
+pub fn init_console() -> io::Result<()> {
+    let handle = get_std_in_handle()?;
+    set_console_mode(handle, CONSOLE_MODE)
 }
 
-pub fn disable_raw_mode() -> io::Result<()> {
-    modify_console_mode(|mode| mode | (ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT))
+pub fn get_console_mode(handle: HANDLE) -> io::Result<u32> {
+    unsafe {
+        let mut mode: u32 = 0;
+        let res = GetConsoleMode(handle, &mut mode);
+        result(res, 0, mode)
+    }
 }
 
-// https://learn.microsoft.com/en-us/windows/console/setconsolemode
-fn modify_console_mode<F>(modify: F) -> io::Result<()> where F: FnOnce(u32) -> u32 {
+pub fn set_console_mode(handle: HANDLE, mode: u32) -> io::Result<()> {
+    unsafe {
+        result(SetConsoleMode(handle, mode), 0, ())
+    }
+}
+
+pub fn get_std_in_handle() -> io::Result<HANDLE> {
     unsafe {
         let handle = GetStdHandle(STD_INPUT_HANDLE);
-        if handle == INVALID_HANDLE_VALUE {
-            return Err(Error::last_os_error());
-        }
-
-        let mut mode: u32 = 0;
-        if GetConsoleMode(handle, &mut mode) == 0 {
-            return Err(Error::last_os_error());
-        }
-
-        mode = modify(mode);
-
-        if SetConsoleMode(handle, mode) == 0 {
-            return Err(Error::last_os_error());
-        }
+        result(handle, INVALID_HANDLE_VALUE, handle)
     }
+}
 
-    Ok(())
+fn result<T: std::cmp::PartialEq, U>(value: T, err_value: T, ret_value: U) -> io::Result<U> {
+    if value == err_value {
+        Err(Error::last_os_error())
+    } else {
+        Ok(ret_value)
+    }
 }
 
 

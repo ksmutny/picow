@@ -254,12 +254,11 @@ impl Editor {
     fn viewport_height(&self) -> u16 { self.viewport_size().1 }
 
     fn open() -> io::Result<()> {
-        terminal::enable_raw_mode()?;
+        terminal::init()?;
         Command::EnterAlternateScreen.execute()
     }
 
     fn close() -> io::Result<()> {
-        terminal::disable_raw_mode()?;
         Command::LeaveAlternateScreen.execute()
     }
 }

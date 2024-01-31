@@ -65,12 +65,8 @@ fn flush() -> io::Result<()> {
     io::stdout().flush()
 }
 
-pub fn enable_raw_mode() -> io::Result<()> {
-    winapi::enable_raw_mode()
-}
-
-pub fn disable_raw_mode() -> io::Result<()> {
-    winapi::disable_raw_mode()
+pub fn init() -> io::Result<()> {
+    winapi::init_console()
 }
 
 pub type Coordinates = (u16, u16);
