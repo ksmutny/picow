@@ -67,7 +67,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             }
         }
 
-        let processed_line = line.replace(['│'], " ").replace(['┌', '─', '┐', '└', '┘', '╔', '▮', '▯'], "_").trim_end().to_string();
+        let processed_line = line.replace(['│', '▯'], " ").replace(['┌', '─', '┐', '└', '┘', '╔', '▮', '▯'], "_").trim_end().to_string();
         lines.push(processed_line);
     }
 
@@ -102,7 +102,7 @@ fn move_cursor_no_scroll() {
     assert_eq!(state.cursor_pos, (7, 2));
     assert_eq!(state.scroll_pos, (0, 0));
     assert_eq!(state.lines, vec![
-        "_____________",
+        "______ ______",
         " ______",
         " ______",
         "_____________"
@@ -130,7 +130,7 @@ fn move_cursor_and_scroll() {
     assert_eq!(state.cursor_pos, (7, 2));
     assert_eq!(state.scroll_pos, (10, 2));
     assert_eq!(state.lines, vec![
-        "_________ __________",
+        "_________ ______ ___",
         "_________ __________________",
         "_________ _____________", // 1
         "_________  ______", // 2
@@ -158,7 +158,7 @@ fn document_start() {
     assert_eq!(state.cursor_pos, (8, 3));
     assert_eq!(state.scroll_pos, (1, 1));
     assert_eq!(state.lines, vec![
-        "______________",
+        " _____________",
         "______________",
         "_ _____",
         "_ _______",

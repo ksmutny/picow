@@ -24,15 +24,16 @@ pub enum ScrollCommand {
 
 pub type NavigationCommand = (ScrollCommand, CursorCommand);
 
-fn move_to_abs(editor: &EditorState, new_cursor_pos: ScrollPosition) -> NavigationCommand {
-    let (x, y) = new_cursor_pos;
+fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> NavigationCommand {
+    let (x_abs, y_abs) = new_cursor_pos_abs;
+    let line_len = editor.lines[y_abs].len();
 
     let scroll_top = editor.scroll_top();
-    let new_scroll_top = cmp::min(scroll_top, y);
+    let new_scroll_top = cmp::min(scroll_top, y_abs);
 
     let (new_x, new_y) = (
-        (x + 1) as u16,
-        (y - new_scroll_top + 1) as u16
+        (cmp::min(x_abs, line_len) + 1) as u16,
+        (y_abs - new_scroll_top + 1) as u16
     );
     let scroll_cmd = if new_scroll_top != scroll_top {
         ScrollTo(0, new_scroll_top)
