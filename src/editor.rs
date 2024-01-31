@@ -12,6 +12,7 @@ pub struct Editor {
     delimiter: String,
     vertical_nav: VerticalNavigation,
     cursor: Coordinates,
+    commands: CommandBuffer,
 }
 
 struct VerticalNavigation {
@@ -25,14 +26,15 @@ impl Editor {
         Self {
             rows, delimiter, terminal_size, top: 0,
             vertical_nav: VerticalNavigation { in_progress: false, last_x: 0 },
-            cursor: (1, 1)
+            cursor: (1, 1),
+            commands: CommandBuffer::new(),
         }
     }
 
     pub fn run(&mut self) -> io::Result<()> {
         Editor::open()?;
-        self.refresh()?;
-        self.move_to(1, 1)?;
+        self.refresh();
+        self.move_to(1, 1);
         self.event_loop()?;
         Editor::close()
     }
@@ -49,28 +51,27 @@ impl Editor {
                     match (code, modifiers) {
                         (Esc, _) => break Ok(()),
 
-                        (Up, CTRL) => self.scroll(-1)?,
-                        (Down, CTRL) => self.scroll(1)?,
-                        (Home, CTRL) =>  self.move_home_document()?,
-                        (End, CTRL) =>  self.move_end_document()?,
+                        (Up, CTRL) => self.scroll(-1),
+                        (Down, CTRL) => self.scroll(1),
+                        (Home, CTRL) =>  self.move_home_document(),
+                        (End, CTRL) =>  self.move_end_document(),
 
-                        (Right, _) =>  self.move_right(1)?,
-                        (Left, _) =>  self.move_left(1)?,
-                        (Up, _) =>  self.move_up(1)?,
-                        (Down, _) =>  self.move_down(1)?,
-                        (Home, _) =>  self.move_home_line()?,
-                        (End, _) =>  self.move_end_line()?,
-                        (PageUp, _) =>  self.move_up(self.viewport_height() - 1)?,
-                        (PageDown, _) =>  self.move_down(self.viewport_height() - 1)?,
+                        (Right, _) =>  self.move_right(1),
+                        (Left, _) =>  self.move_left(1),
+                        (Up, _) =>  self.move_up(1),
+                        (Down, _) =>  self.move_down(1),
+                        (Home, _) =>  self.move_home_line(),
+                        (End, _) =>  self.move_end_line(),
+                        (PageUp, _) =>  self.move_up(self.viewport_height() - 1),
+                        (PageDown, _) =>  self.move_down(self.viewport_height() - 1),
                         _ => {}
                     }
-                    terminal::flush()?;
                 },
-                Event::Resize(width, height) => self.resize((width, height))?,
+                Event::Resize(width, height) => self.resize((width, height)),
                 _ => {}
             }
-            self.status_bar()?;
-            terminal::flush()?;
+            self.status_bar();
+            self.commands.execute()?;
         }
     }
 
@@ -95,7 +96,7 @@ impl Editor {
         }
     }
 
-    fn move_to(&mut self, x: u16, y: u16) -> io::Result<()> {
+    fn move_to(&mut self, x: u16, y: u16) {
         let eof_y = self.rows.len() as u16 - self.top;
         let new_y = y.clamp(1, eof_y);
 
@@ -103,15 +104,15 @@ impl Editor {
         let new_x = x.clamp(1, eol);
 
         self.cursor = (new_x, new_y);
-        Command::MoveTo(new_x, new_y).queue()
+        self.commands.queue(Command::MoveTo(new_x, new_y))
     }
 
-    fn move_up(&mut self, n: u16) -> io::Result<()> {
+    fn move_up(&mut self, n: u16) {
         let (x, y) = self.cursor;
         let new_x = self.vertical_nav_x(x);
 
         if y == 1 && self.top > 0 {
-            self.scroll(-(n as i16))?;
+            self.scroll(-(n as i16));
             self.move_to(new_x, y)
         } else {
             let delta = n.clamp(1, y);
@@ -119,7 +120,7 @@ impl Editor {
         }
     }
 
-    fn move_down(&mut self, n: u16) -> io::Result<()> {
+    fn move_down(&mut self, n: u16) {
         let (x, y) = self.cursor;
         let new_x = self.vertical_nav_x(x);
         let height = self.viewport_height();
@@ -128,7 +129,7 @@ impl Editor {
         let rows_below_viewport = (self.top + height) < self.rows.len() as u16;
 
         if scroll_below_viewport && rows_below_viewport {
-            self.scroll(n as i16)?;
+            self.scroll(n as i16);
             self.move_to(new_x, y)
         } else {
             let delta = cmp::min(y + n, height) - y;
@@ -136,7 +137,7 @@ impl Editor {
         }
     }
 
-    fn move_right(&mut self, n: u16) -> io::Result<()> {
+    fn move_right(&mut self, n: u16) {
         let (x, y) = self.cursor;
         let row_len = self.line_at(y).len() as u16;
 
@@ -147,7 +148,7 @@ impl Editor {
         }
     }
 
-    fn move_left(&mut self, n: u16) -> io::Result<()> {
+    fn move_left(&mut self, n: u16) {
         let (x, y) = self.cursor;
 
         if x <= n && self.curr_line_idx() > 0 {
@@ -157,37 +158,37 @@ impl Editor {
         }
     }
 
-    fn move_home_line(&mut self) -> io::Result<()> {
+    fn move_home_line(&mut self) {
         self.move_to(1, self.cursor_y())
     }
 
-    fn move_end_line(&mut self) -> io::Result<()> {
+    fn move_end_line(&mut self) {
         let y = self.cursor_y();
         let row_len = self.line_at(y).len() as u16;
 
         self.move_to(row_len + 1, y)
     }
 
-    fn move_home_document(&mut self) -> io::Result<()> {
+    fn move_home_document(&mut self) {
         self.top = 0;
-        self.refresh()?;
+        self.refresh();
         self.move_to(1, 1)
     }
 
-    fn move_end_document(&mut self) -> io::Result<()> {
+    fn move_end_document(&mut self) {
         self.top = cmp::max(self.top, self.rows.len() as u16 - self.viewport_height());
         let eof_y = self.rows.len() as u16 - self.top;
         let eof_x = self.line_at(eof_y).len() as u16 + 1;
 
-        self.refresh()?;
+        self.refresh();
         self.move_to(eof_x, eof_y)
     }
 
-    fn scroll(&mut self, delta: i16) -> io::Result<()> {
+    fn scroll(&mut self, delta: i16) {
         let (x, y) = self.cursor;
 
         self.top = (self.top as i16 + delta).clamp(0, self.rows.len() as i16) as u16;
-        self.refresh()?;
+        self.refresh();
 
         let new_y = (y as i16 - delta).clamp(1, self.viewport_height() as i16 - 1) as u16;
 
@@ -203,37 +204,34 @@ impl Editor {
     }
 
 
-    fn refresh(&self) -> io::Result<()> {
-        let mut commands = vec![Command::Clear];
+    fn refresh(&mut self) {
+        self.commands.queue(Command::Clear);
 
         for i in 0..self.viewport_height() {
             if let Some(row) = self.rows.get((self.top + i) as usize) {
-                commands.push(Command::MoveTo(1, i + 1));
-                commands.push(Command::Print(row.to_string()));
+                self.commands.queue(Command::MoveTo(1, i + 1));
+                self.commands.queue(Command::Print(row.to_string()));
             } else {
                 break;
             }
         }
-        commands.queue()
     }
 
-    fn resize(&mut self, terminal_size: Coordinates) -> io::Result<()> {
+    fn resize(&mut self, terminal_size: Coordinates) {
         self.terminal_size = terminal_size;
         self.refresh()
     }
 
-    fn status_bar(&self) -> io::Result<()> {
+    fn status_bar(&mut self) {
         let (width, height) = self.viewport_size();
         let (x, y) = self.cursor;
 
         let status = format!("{}x{} | {} {} | {} | {}", width, height, x, y, self.top, self.delimiter_label());
 
-        vec![
-            Command::MoveTo(1, self.terminal_height()),
-            Command::ClearLine,
-            Command::Print(status),
-            Command::MoveTo(x, y)
-        ].queue()
+        self.commands.queue(Command::MoveTo(1, self.terminal_height()));
+        self.commands.queue(Command::ClearLine);
+        self.commands.queue(Command::Print(status));
+        self.commands.queue(Command::MoveTo(x, y))
     }
 
     fn delimiter_label(&self) -> &str {

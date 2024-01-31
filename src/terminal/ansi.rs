@@ -6,11 +6,11 @@ macro_rules! csi {
     }};
 }
 
-pub fn ansi(command: Command) -> String {
+pub fn ansi(command: &Command) -> String {
     match command {
-        Clear => csi!("2J{}", ansi(MoveTo(1, 1))),
+        Clear => csi!("2J{}", ansi(&MoveTo(1, 1))),
         ClearLine => csi!("2K"),
-        Print(s) => s,
+        Print(s) => s.to_string(),
 
         MoveTo(x, y) => csi!("{};{}H", y, x),
         MoveUp(n) => csi!("{}A", n),
@@ -18,7 +18,7 @@ pub fn ansi(command: Command) -> String {
         MoveRight(n) => csi!("{}C", n),
         MoveLeft(n) => csi!("{}D", n),
 
-        EnterAlternateScreen => csi!("?1049h{}", ansi(MoveTo(1  , 1))),
+        EnterAlternateScreen => csi!("?1049h{}", ansi(&MoveTo(1  , 1))),
         LeaveAlternateScreen => csi!("?1049l"),
     }
 }
