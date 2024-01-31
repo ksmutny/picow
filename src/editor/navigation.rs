@@ -69,3 +69,14 @@ pub fn move_down(editor: &EditorState, n: usize) -> NavigationCommand {
 
     move_to_abs(editor, new_pos)
 }
+
+pub fn move_document_start(editor: &EditorState) -> NavigationCommand {
+    move_to_abs(editor, (0, 0))
+}
+
+pub fn move_document_end(editor: &EditorState) -> NavigationCommand {
+    let lines = editor.lines.len();
+    let last_line_len = editor.lines[lines - 1].len();
+
+    move_to_abs(editor, (last_line_len, lines - 1))
+}

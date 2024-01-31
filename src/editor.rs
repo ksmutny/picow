@@ -62,8 +62,8 @@ impl Editor {
 
                         (Up, CTRL) => self.scroll_up(1),
                         (Down, CTRL) => self.scroll_down(1),
-                        (Home, CTRL) =>  self.move_home_document(),
-                        (End, CTRL) =>  self.move_end_document(),
+                        (Home, CTRL) =>  self.queue(navigation::move_document_start(&self.state)),
+                        (End, CTRL) =>  self.queue(navigation::move_document_end(&self.state)),
 
                         (Right, _) =>  self.move_right(1),
                         (Left, _) =>  self.move_left(1),
@@ -174,19 +174,6 @@ impl Editor {
         let row_len = self.line_at(y).len() as u16;
 
         self.move_to(row_len + 1, y)
-    }
-
-    fn move_home_document(&mut self) {
-        self.scroll_to(0);
-        self.move_to(1, 1)
-    }
-
-    fn move_end_document(&mut self) {
-        self.scroll_to(cmp::max(self.state.scroll_top(), self.state.lines.len() - self.state.viewport_height() as usize));
-
-         let eof_y = self.state.lines.len() - self.state.scroll_top();
-        let eof_x = self.line_at(eof_y as u16).len() as u16 + 1;
-        self.move_to(eof_x, eof_y as u16)
     }
 
     fn scroll_to(&mut self, y: usize) {

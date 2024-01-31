@@ -102,3 +102,36 @@ mod move_down {
         "└───────────┘"
     );
 }
+
+mod document_start_end {
+    use super::parse_editor::parse_test_case;
+    use picow::editor::navigation::{move_document_start, move_document_end};
+
+    test_nav!(
+        move_to_document_start
+        move_document_start();
+      // 12345678901234
+        "▯_______    ",
+        "_____        ",
+        "┌───────────┐",
+        "│_____▮     │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_to_document_end
+        move_document_end();
+      // 12345678901234
+        "┌───────────┐",
+        "│_____▮     │",
+        "│______     │",
+        "└───────────┘",
+        "_______      ",
+        "_______      ",
+        "╔______      ",
+        "_______      ",
+        "_______      ",
+        "___☼▯        "
+    );
+}
