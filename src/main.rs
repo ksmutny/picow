@@ -1,6 +1,5 @@
-mod file;
-mod editor;
-mod terminal;
+use picow::editor;
+use picow::file;
 
 fn main() -> std::io::Result<()> {
     let (lines, delimiter) = file::read_file("src/editor.rs")?;

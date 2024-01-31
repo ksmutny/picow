@@ -1,4 +1,5 @@
 pub mod state;
+pub mod navigation;
 
 use std::{cmp, io};
 
@@ -6,7 +7,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifier
 
 use crate::terminal::{self, *, commands::Command};
 
-use self::state::EditorState;
+use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, state::EditorState};
 
 
 pub struct Editor {
@@ -66,11 +67,11 @@ impl Editor {
 
                         (Right, _) =>  self.move_right(1),
                         (Left, _) =>  self.move_left(1),
-                        (Up, _) => self.move_up(1),
+                        (Up, _) => self.queue(navigation::move_up(&self.state, 1)),
                         (Down, _) =>  self.move_down(1),
                         (Home, _) =>  self.move_home_line(),
                         (End, _) =>  self.move_end_line(),
-                        (PageUp, _) =>  self.move_up(self.state.viewport_height() - 1),
+                        (PageUp, _) => self.queue(navigation::move_up(&self.state, self.state.viewport_height() as usize - 1)),
                         (PageDown, _) =>  self.move_down(self.state.viewport_height() - 1),
                         _ => {}
                     }
@@ -90,6 +91,24 @@ impl Editor {
             }
             self.status_bar();
             self.commands.execute()?;
+        }
+    }
+
+    fn queue(&mut self, commands: NavigationCommand) {
+        use CursorCommand::*;
+        use ScrollCommand::*;
+
+        let (scroll_cmd, cursor_cmd) = commands;
+        match scroll_cmd {
+            ScrollTo(_, y) => self.scroll_to(y),
+            NoScroll => {}
+        }
+        match cursor_cmd {
+            MoveTo(x, y) => {
+                self.commands.queue(Command::MoveTo(x, y));
+                self.state.cursor_pos = (x, y);
+            },
+            NoMove => {}
         }
     }
 
@@ -123,19 +142,6 @@ impl Editor {
 
         self.state.cursor_pos = (new_x, new_y);
         self.commands.queue(Command::MoveTo(new_x, new_y))
-    }
-
-    fn move_up(&mut self, n: u16) {
-        let (x, y) = self.state.cursor_pos;
-        let new_x = self.vertical_nav_x(x);
-
-        if y == 1 && self.state.scroll_top() > 0 {
-            self.scroll_up(n as usize);
-            self.move_to(new_x, y)
-        } else {
-            let delta = n.clamp(1, y);
-            self.move_to(new_x, y - delta)
-        }
     }
 
     fn move_down(&mut self, n: u16) {

@@ -20,6 +20,7 @@ impl EditorState {
     pub fn cursor_x(&self) -> u16 { self.cursor_pos.0 }
     pub fn cursor_y(&self) -> u16 { self.cursor_pos.1 }
 
-    pub fn curr_col(&self) -> usize { self.scroll_left() + self.cursor_x() as usize }
-    pub fn curr_row(&self) -> usize { self.scroll_top() + self.cursor_y() as usize }
+    pub fn cursor_pos_abs(&self) -> ScrollPosition { (self.cursor_x_abs(), self.cursor_y_abs()) }
+    pub fn cursor_x_abs(&self) -> usize { self.scroll_left() + self.cursor_x() as usize - 1 }
+    pub fn cursor_y_abs(&self) -> usize { self.scroll_top() + self.cursor_y() as usize - 1 }
 }
