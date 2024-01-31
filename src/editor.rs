@@ -1,13 +1,13 @@
 use std::{cmp, io};
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::{event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind}, style::Print};
 
 use crate::terminal::{self, *, commands::Command};
 
 
 pub struct Editor {
     terminal_size: Coordinates,
-    top: u16,
+    top: usize,
     rows: Vec<String>,
     delimiter: String,
     vertical_nav: VerticalNavigation,
@@ -51,8 +51,10 @@ impl Editor {
                     match (code, modifiers) {
                         (Esc, _) => break Ok(()),
 
-                        (Up, CTRL) => self.scroll(-1),
-                        (Down, CTRL) => self.scroll(1),
+                        (Char(c), _) => self.commands.queue(Command::Print(c.to_string())),
+
+                        (Up, CTRL) => self.scroll_up(1),
+                        (Down, CTRL) => self.scroll_down(1),
                         (Home, CTRL) =>  self.move_home_document(),
                         (End, CTRL) =>  self.move_end_document(),
 
@@ -64,6 +66,16 @@ impl Editor {
                         (End, _) =>  self.move_end_line(),
                         (PageUp, _) =>  self.move_up(self.viewport_height() - 1),
                         (PageDown, _) =>  self.move_down(self.viewport_height() - 1),
+                        _ => {}
+                    }
+                },
+                Event::Mouse(MouseEvent { kind, column, row, .. }) => {
+                    use MouseButton::*;
+
+                    match kind {
+                        MouseEventKind::Down(Left) => self.move_to(column + 1, row + 1),
+                        MouseEventKind::ScrollDown => self.scroll_down(1),
+                        MouseEventKind::ScrollUp => self.scroll_up(1),
                         _ => {}
                     }
                 },
@@ -97,8 +109,8 @@ impl Editor {
     }
 
     fn move_to(&mut self, x: u16, y: u16) {
-        let eof_y = self.rows.len() as u16 - self.top;
-        let new_y = y.clamp(1, eof_y);
+        let eof_y = self.rows.len() - self.top;
+        let new_y = y.clamp(1, eof_y as u16);
 
         let eol = self.line_at(new_y).len() as u16 + 1;
         let new_x = x.clamp(1, eol);
@@ -112,7 +124,7 @@ impl Editor {
         let new_x = self.vertical_nav_x(x);
 
         if y == 1 && self.top > 0 {
-            self.scroll(-(n as i16));
+            self.scroll_up(n as usize);
             self.move_to(new_x, y)
         } else {
             let delta = n.clamp(1, y);
@@ -126,10 +138,10 @@ impl Editor {
         let height = self.viewport_height();
 
         let scroll_below_viewport = (y + n) > height;
-        let rows_below_viewport = (self.top + height) < self.rows.len() as u16;
+        let rows_below_viewport = (self.top + height as usize) < self.rows.len();
 
         if scroll_below_viewport && rows_below_viewport {
-            self.scroll(n as i16);
+            self.scroll_down(n as usize);
             self.move_to(new_x, y)
         } else {
             let delta = cmp::min(y + n, height) - y;
@@ -170,37 +182,38 @@ impl Editor {
     }
 
     fn move_home_document(&mut self) {
-        self.top = 0;
-        self.refresh();
+        self.scroll_to(0);
         self.move_to(1, 1)
     }
 
     fn move_end_document(&mut self) {
-        self.top = cmp::max(self.top, self.rows.len() as u16 - self.viewport_height());
-        let eof_y = self.rows.len() as u16 - self.top;
-        let eof_x = self.line_at(eof_y).len() as u16 + 1;
+        self.scroll_to(cmp::max(self.top, self.rows.len() - self.viewport_height() as usize));
 
-        self.refresh();
-        self.move_to(eof_x, eof_y)
+         let eof_y = self.rows.len() - self.top;
+        let eof_x = self.line_at(eof_y as u16).len() as u16 + 1;
+        self.move_to(eof_x, eof_y as u16)
     }
 
-    fn scroll(&mut self, delta: i16) {
-        let (x, y) = self.cursor;
+    fn scroll_to(&mut self, y: usize) {
+        self.top = cmp::min(y, self.rows.len() - 1);
+        self.refresh()
+    }
 
-        self.top = (self.top as i16 + delta).clamp(0, self.rows.len() as i16) as u16;
-        self.refresh();
+    fn scroll_up(&mut self, delta: usize) {
+        let delta = cmp::min(delta, self.top);
+        self.scroll_to(self.top - delta);
+    }
 
-        let new_y = (y as i16 - delta).clamp(1, self.viewport_height() as i16 - 1) as u16;
-
-        self.move_to(x, new_y)
+    fn scroll_down(&mut self, delta: usize) {
+        self.scroll_to(self.top + delta);
     }
 
     fn curr_line_idx(&self) -> usize {
-        (self.top + self.cursor_y() - 1) as usize
+        self.top + self.cursor_y() as usize - 1
     }
 
     fn line_at(&self, y: u16) -> &str {
-        &self.rows[(self.top + y - 1) as usize]
+        &self.rows[self.top + y as usize - 1]
     }
 
 
@@ -208,7 +221,7 @@ impl Editor {
         self.commands.queue(Command::Clear);
 
         for i in 0..self.viewport_height() {
-            if let Some(row) = self.rows.get((self.top + i) as usize) {
+            if let Some(row) = self.rows.get(self.top + i as usize) {
                 self.commands.queue(Command::MoveTo(1, i + 1));
                 self.commands.queue(Command::Print(row.to_string()));
             } else {
