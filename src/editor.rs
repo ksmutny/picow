@@ -68,11 +68,11 @@ impl Editor {
                         (Right, _) =>  self.move_right(1),
                         (Left, _) =>  self.move_left(1),
                         (Up, _) => self.queue(navigation::move_up(&self.state, 1)),
-                        (Down, _) =>  self.move_down(1),
+                        (Down, _) =>  self.queue(navigation::move_down(&self.state, 1)),
                         (Home, _) =>  self.move_home_line(),
                         (End, _) =>  self.move_end_line(),
                         (PageUp, _) => self.queue(navigation::move_up(&self.state, self.state.viewport_height() as usize - 1)),
-                        (PageDown, _) =>  self.move_down(self.state.viewport_height() - 1),
+                        (PageDown, _) =>  self.queue(navigation::move_down(&self.state, self.state.viewport_height() as usize - 1)),
                         _ => {}
                     }
                 },
@@ -142,23 +142,6 @@ impl Editor {
 
         self.state.cursor_pos = (new_x, new_y);
         self.commands.queue(Command::MoveTo(new_x, new_y))
-    }
-
-    fn move_down(&mut self, n: u16) {
-        let (x, y) = self.state.cursor_pos;
-        let new_x = self.vertical_nav_x(x);
-        let height = self.state.viewport_height();
-
-        let scroll_below_viewport = (y + n) > height;
-        let rows_below_viewport = (self.state.scroll_top() + height as usize) < self.state.lines.len();
-
-        if scroll_below_viewport && rows_below_viewport {
-            self.scroll_down(n as usize);
-            self.move_to(new_x, y)
-        } else {
-            let delta = cmp::min(y + n, height) - y;
-            self.move_to(new_x, y + delta)
-        }
     }
 
     fn move_right(&mut self, n: u16) {

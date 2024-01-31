@@ -11,6 +11,8 @@ pub struct TestCase {
 
 pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let mut lines = Vec::new();
+    let mut eof_found = false;
+    let mut eof_reached = false;
     let mut viewport_size: ViewportDimensions = (0, 0);
     let mut cursor_pos: CursorPosition = (0, 0);
     let mut scroll_pos: ScrollPosition = (0, 0);
@@ -67,8 +69,16 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             }
         }
 
-        let processed_line = line.replace(['│', '▯'], " ").replace(['┌', '─', '┐', '└', '┘', '╔', '▮', '▯'], "_").trim_end().to_string();
-        lines.push(processed_line);
+        if line.contains('☼') {
+            eof_found = true;
+        }
+
+        if !eof_reached {
+            let processed_line = line.replace(['│', '▯'], " ").replace(['┌', '─', '┐', '└', '┘', '╔', '▮', '☼'], "_").trim_end().to_string();
+            lines.push(processed_line);
+
+            if eof_found { eof_reached = true; }
+        }
     }
 
     TestCase {
@@ -167,4 +177,24 @@ fn document_start() {
 
     assert_eq!(tc.expected_cursor, MoveTo(1, 1));
     assert_eq!(tc.expected_scroll, ScrollTo(0, 0));
+}
+
+#[test]
+fn eof() {
+    let tc = parse_test_case(vec![
+        "┌───────────┐",
+        "│_____▯     │",
+        "│______▮    │",
+        "│__☼        │",
+        "│           │",
+        "└───────────┘"
+    ]);
+
+    let state = tc.editor_state;
+    assert_eq!(state.lines, vec![
+        "_____________",
+        " _____",
+        " _______",
+        " ___",
+    ]);
 }

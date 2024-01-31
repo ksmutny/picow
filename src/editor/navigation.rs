@@ -29,7 +29,15 @@ fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> Navi
     let line_len = editor.lines[y_abs].len();
 
     let scroll_top = editor.scroll_top();
-    let new_scroll_top = cmp::min(scroll_top, y_abs);
+    let height = editor.viewport_height() as usize;
+
+    let new_scroll_top = if y_abs < scroll_top {
+        y_abs
+    } else if y_abs >= scroll_top + height {
+        y_abs - height + 1
+    } else {
+        scroll_top
+    };
 
     let (new_x, new_y) = (
         (cmp::min(x_abs, line_len) + 1) as u16,
@@ -46,7 +54,18 @@ fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> Navi
 
 pub fn move_up(editor: &EditorState, n: usize) -> NavigationCommand {
     let (x, y) = editor.cursor_pos_abs();
-    let T(new_pos) = t(x, y) - t(0, n);
+
+    let delta = cmp::min(n, y);
+    let T(new_pos) = t(x, y) - t(0, delta);
+
+    move_to_abs(editor, new_pos)
+}
+
+pub fn move_down(editor: &EditorState, n: usize) -> NavigationCommand {
+    let (x, y) = editor.cursor_pos_abs();
+
+    let delta = cmp::min(n, editor.lines.len() - 1 - y);
+    let T(new_pos) = t(x, y) + t(0, delta);
 
     move_to_abs(editor, new_pos)
 }
