@@ -7,19 +7,13 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifier
 
 use crate::terminal::{self, *, commands::Command};
 
-use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, state::EditorState};
+use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, state::{EditorState, VerticalNavigation}};
 
 
 pub struct Editor {
     state: EditorState,
     delimiter: String,
-    vertical_nav: VerticalNavigation,
     commands: CommandBuffer,
-}
-
-struct VerticalNavigation {
-    in_progress: bool,
-    last_x: u16,
 }
 
 impl Editor {
@@ -31,9 +25,9 @@ impl Editor {
                 scroll_pos: (0, 0),
                 cursor_pos: (1, 1),
                 lines: rows,
+                vertical_nav: VerticalNavigation::new(),
             },
             delimiter,
-            vertical_nav: VerticalNavigation { in_progress: false, last_x: 0 },
             commands: CommandBuffer::new(),
         }
     }
@@ -53,7 +47,10 @@ impl Editor {
                     use KeyCode::*;
                     const CTRL: KeyModifiers = KeyModifiers::CONTROL;
 
-                    self.update_vertical_nav(code);
+                    match code {
+                        Up | Down | PageUp | PageDown => self.state.vertical_nav.start(self.state.cursor_x_abs()),
+                        _ => self.state.vertical_nav.end(),
+                    }
 
                     match (code, modifiers) {
                         (Esc, _) => break Ok(()),
@@ -109,27 +106,6 @@ impl Editor {
                 self.state.cursor_pos = (x, y);
             },
             NoMove => {}
-        }
-    }
-
-    fn update_vertical_nav(&mut self, key_code: KeyCode) {
-        use KeyCode::*;
-
-        match key_code {
-            Up | Down | PageUp | PageDown =>
-                if !self.vertical_nav.in_progress {
-                    self.vertical_nav.in_progress = true;
-                    self.vertical_nav.last_x = self.state.cursor_x();
-                },
-            _ => self.vertical_nav.in_progress = false
-        }
-    }
-
-    fn vertical_nav_x(&self, x: u16) -> u16 {
-        if self.vertical_nav.in_progress {
-            self.vertical_nav.last_x
-        } else {
-            x
         }
     }
 

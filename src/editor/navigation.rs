@@ -40,7 +40,7 @@ fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> Navi
     };
 
     let (new_x, new_y) = (
-        (cmp::min(x_abs, line_len) + 1) as u16,
+        (cmp::min(editor.vertical_nav.x(x_abs), line_len) + 1) as u16,
         (y_abs - new_scroll_top + 1) as u16
     );
     let scroll_cmd = if new_scroll_top != scroll_top {
