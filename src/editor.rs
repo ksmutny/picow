@@ -11,6 +11,7 @@ pub struct Editor {
     rows: Vec<String>,
     delimiter: String,
     vertical_nav: VerticalNavigation,
+    cursor: Coordinates,
 }
 
 struct VerticalNavigation {
@@ -21,7 +22,11 @@ struct VerticalNavigation {
 impl Editor {
     pub fn new(rows: Vec<String>, delimiter: String) -> Self {
         let terminal_size = terminal::terminal_size().unwrap();
-        Self { rows, delimiter, terminal_size, top: 0, vertical_nav: VerticalNavigation { in_progress: false, last_x: 0 } }
+        Self {
+            rows, delimiter, terminal_size, top: 0,
+            vertical_nav: VerticalNavigation { in_progress: false, last_x: 0 },
+            cursor: (1, 1)
+        }
     }
 
     pub fn run(&mut self) -> io::Result<()> {
@@ -90,18 +95,19 @@ impl Editor {
         }
     }
 
-    fn move_to(&self, x: u16, y: u16) -> io::Result<()> {
+    fn move_to(&mut self, x: u16, y: u16) -> io::Result<()> {
         let eof_y = self.rows.len() as u16 - self.top;
         let new_y = y.clamp(1, eof_y);
 
         let eol = self.line_at(new_y).len() as u16 + 1;
         let new_x = x.clamp(1, eol);
 
+        self.cursor = (new_x, new_y);
         Command::MoveTo(new_x, new_y).queue()
     }
 
     fn move_up(&mut self, n: u16) -> io::Result<()> {
-        let (x, y) = self.cursor();
+        let (x, y) = self.cursor;
         let new_x = self.vertical_nav_x(x);
 
         if y == 1 && self.top > 0 {
@@ -114,7 +120,7 @@ impl Editor {
     }
 
     fn move_down(&mut self, n: u16) -> io::Result<()> {
-        let (x, y) = self.cursor();
+        let (x, y) = self.cursor;
         let new_x = self.vertical_nav_x(x);
         let height = self.viewport_height();
 
@@ -131,7 +137,7 @@ impl Editor {
     }
 
     fn move_right(&mut self, n: u16) -> io::Result<()> {
-        let (x, y) = self.cursor();
+        let (x, y) = self.cursor;
         let row_len = self.line_at(y).len() as u16;
 
         if x + n > row_len + 1 {
@@ -142,7 +148,7 @@ impl Editor {
     }
 
     fn move_left(&mut self, n: u16) -> io::Result<()> {
-        let (x, y) = self.cursor();
+        let (x, y) = self.cursor;
 
         if x <= n && self.curr_line_idx() > 0 {
             self.move_to(self.line_at(y - 1).len() as u16 + 1, y - 1)
@@ -151,11 +157,11 @@ impl Editor {
         }
     }
 
-    fn move_home_line(&self) -> io::Result<()> {
+    fn move_home_line(&mut self) -> io::Result<()> {
         self.move_to(1, self.cursor_y())
     }
 
-    fn move_end_line(&self) -> io::Result<()> {
+    fn move_end_line(&mut self) -> io::Result<()> {
         let y = self.cursor_y();
         let row_len = self.line_at(y).len() as u16;
 
@@ -178,7 +184,7 @@ impl Editor {
     }
 
     fn scroll(&mut self, delta: i16) -> io::Result<()> {
-        let (x, y) = self.cursor();
+        let (x, y) = self.cursor;
 
         self.top = (self.top as i16 + delta).clamp(0, self.rows.len() as i16) as u16;
         self.refresh()?;
@@ -218,7 +224,7 @@ impl Editor {
 
     fn status_bar(&self) -> io::Result<()> {
         let (width, height) = self.viewport_size();
-        let (x, y) = self.cursor();
+        let (x, y) = self.cursor;
 
         let status = format!("{}x{} | {} {} | {} | {}", width, height, x, y, self.top, self.delimiter_label());
 
@@ -241,12 +247,8 @@ impl Editor {
         }
     }
 
-    fn cursor(&self) -> Coordinates {
-        terminal::cursor_position().unwrap()
-    }
-
-    fn cursor_x(&self) -> u16 { self.cursor().0 }
-    fn cursor_y(&self) -> u16 { self.cursor().1 }
+    fn cursor_x(&self) -> u16 { self.cursor.0 }
+    fn cursor_y(&self) -> u16 { self.cursor.1 }
 
     fn terminal_height(&self) -> u16 { self.terminal_size.1 }
 

@@ -55,7 +55,3 @@ pub type Coordinates = (u16, u16);
 pub fn terminal_size() -> io::Result<Coordinates> {
     winapi::terminal_size()
 }
-
-pub fn cursor_position() -> io::Result<Coordinates> {
-    winapi::cursor_position()
-}

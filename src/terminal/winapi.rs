@@ -47,14 +47,6 @@ pub fn terminal_size() -> Result<(u16, u16), Error> {
     })
 }
 
-pub fn cursor_position() -> Result<(u16, u16), Error> {
-    with_console_info(|info| {
-        let x = info.dwCursorPosition.X as u16 + 1;
-        let y = info.dwCursorPosition.Y as u16 + 1;
-        (x, y)
-    })
-}
-
 fn with_console_info<T, F>(extract: F) -> Result<T, Error> where F: FnOnce(CONSOLE_SCREEN_BUFFER_INFO) -> T {
     unsafe {
         let handle = GetStdHandle(STD_OUTPUT_HANDLE);
