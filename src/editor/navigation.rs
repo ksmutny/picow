@@ -55,12 +55,20 @@ fn to_relative((x_abs, y_abs): ScrollPosition, (scroll_left, scroll_top): Scroll
     ((x_abs - scroll_left + 1) as u16, (y_abs - scroll_top + 1) as u16)
 }
 
+fn to_absolute((x, y): CursorPosition, (scroll_left, scroll_top): ScrollPosition) -> ScrollPosition {
+    (x as usize + scroll_left - 1, y as usize + scroll_top - 1)
+}
+
 fn move_cmd(editor: &EditorState, new_pos @ (x, y): CursorPosition) -> CursorCommand {
     if new_pos == editor.cursor_pos { NoMove } else { MoveTo(x, y) }
 }
 
 fn scroll_cmd(editor: &EditorState, new_pos @ (x, y): ScrollPosition) -> ScrollCommand {
     if new_pos == editor.scroll_pos { NoScroll } else { ScrollTo(x, y) }
+}
+
+pub fn click(editor: &EditorState, x: u16, y: u16) -> NavigationCommand {
+    move_to_abs(editor, to_absolute((x, y), editor.scroll_pos))
 }
 
 pub fn move_up(editor: &EditorState, n: usize) -> NavigationCommand {
