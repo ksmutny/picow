@@ -91,21 +91,14 @@ impl Editor {
         }
     }
 
-    fn queue(&mut self, commands: NavigationCommand) {
-        use CursorCommand::*;
-        use ScrollCommand::*;
-
-        let (scroll_cmd, cursor_cmd) = commands;
-        match scroll_cmd {
-            ScrollTo(x, y) => self.scroll_to(x, y),
-            NoScroll => {}
+    fn queue(&mut self, (scroll_cmd, cursor_cmd): NavigationCommand) {
+        if let ScrollCommand::ScrollTo(x, y) = scroll_cmd {
+            self.state.scroll_pos = (x, y);
+            self.refresh();
         }
-        match cursor_cmd {
-            MoveTo(x, y) => {
-                self.commands.queue(Command::MoveTo(x, y));
-                self.state.cursor_pos = (x, y);
-            },
-            NoMove => {}
+        if let CursorCommand::MoveTo(x, y) = cursor_cmd {
+            self.state.cursor_pos = (x, y);
+            self.commands.queue(Command::MoveTo(x, y));
         }
     }
 
