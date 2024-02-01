@@ -131,3 +131,24 @@ fn line_end(editor: &EditorState, y: usize) -> ScrollPosition {
 fn last_line_end(editor: &EditorState) -> ScrollPosition {
     line_end(editor, editor.lines.len() - 1)
 }
+
+pub fn scroll_to(editor: &EditorState, (scroll_left, scroll_top): ScrollPosition) -> NavigationCommand {
+    let new_scroll_top = min(scroll_top, editor.lines.len() - 1);
+    (scroll_cmd(editor, (scroll_left, new_scroll_top)), NoMove)
+}
+
+pub fn scroll_up(editor: &EditorState, n: usize) -> NavigationCommand {
+    scroll_vertical(editor, |y| y - min(n, y))
+}
+
+pub fn scroll_down(editor: &EditorState, n: usize) -> NavigationCommand {
+    scroll_vertical(editor, |y| y + min(n, editor.lines.len() - 1 - y))
+}
+
+fn scroll_vertical<F>(editor: &EditorState, new: F) -> NavigationCommand
+where
+    F: Fn(usize) -> usize,
+{
+    let (x, y) = editor.scroll_pos;
+    scroll_to(editor, (x, new(y)))
+}

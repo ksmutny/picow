@@ -57,8 +57,8 @@ impl Editor {
 
                         (Char(c), _) => self.commands.queue(Command::Print(c.to_string())),
 
-                        (Up, CTRL) => self.scroll_up(1),
-                        (Down, CTRL) => self.scroll_down(1),
+                        (Up, CTRL) => self.queue(navigation::scroll_up(&self.state, 1)),
+                        (Down, CTRL) => self.queue(navigation::scroll_down(&self.state, 1)),
                         (Home, CTRL) =>  self.queue(navigation::move_document_start(&self.state)),
                         (End, CTRL) =>  self.queue(navigation::move_document_end(&self.state)),
 
@@ -78,8 +78,8 @@ impl Editor {
 
                     match kind {
                         MouseEventKind::Down(Left) => self.queue(navigation::click(&self.state, column + 1, row + 1)),
-                        MouseEventKind::ScrollDown => self.scroll_down(1),
-                        MouseEventKind::ScrollUp => self.scroll_up(1),
+                        MouseEventKind::ScrollDown => self.queue(navigation::scroll_down(&self.state, 1)),
+                        MouseEventKind::ScrollUp => self.queue(navigation::scroll_up(&self.state, 1)),
                         _ => {}
                     }
                 },
@@ -101,21 +101,6 @@ impl Editor {
             self.commands.queue(Command::MoveTo(x, y));
         }
     }
-
-    fn scroll_to(&mut self, x: usize, y: usize) {
-        self.state.scroll_pos = (x, cmp::min(y, self.state.lines.len() - 1));
-        self.refresh()
-    }
-
-    fn scroll_up(&mut self, delta: usize) {
-        let delta = cmp::min(delta, self.state.scroll_top());
-        self.scroll_to(self.state.scroll_left(), self.state.scroll_top() - delta);
-    }
-
-    fn scroll_down(&mut self, delta: usize) {
-        self.scroll_to(self.state.scroll_left(), self.state.scroll_top() + delta);
-    }
-
 
     fn refresh(&mut self) {
         self.commands.queue(Command::Clear);
