@@ -1,9 +1,7 @@
 #[path="./tuple_ops.rs"]
 mod tuple_ops;
 
-use std::cmp;
-
-use tuple_ops::*;
+use std::cmp::{max,min};
 
 use super::state::{EditorState, ScrollPosition};
 use CursorCommand::*;
@@ -40,7 +38,7 @@ fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> Navi
     };
 
     let (new_x, new_y) = (
-        (cmp::min(editor.vertical_nav.x(x_abs), line_len) + 1) as u16,
+        (min(editor.vertical_nav.x(x_abs), line_len) + 1) as u16,
         (y_abs - new_scroll_top + 1) as u16
     );
     let scroll_cmd = if new_scroll_top != scroll_top {
@@ -53,21 +51,19 @@ fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> Navi
 }
 
 pub fn move_up(editor: &EditorState, n: usize) -> NavigationCommand {
-    let (x, y) = editor.cursor_pos_abs();
-
-    let delta = cmp::min(n, y);
-    let T(new_pos) = t(x, y) - t(0, delta);
-
-    move_to_abs(editor, new_pos)
+    move_vertical(editor, |y| y - min(n, y))
 }
 
 pub fn move_down(editor: &EditorState, n: usize) -> NavigationCommand {
+    move_vertical(editor, |y| y + min(n, editor.lines.len() - 1 - y))
+}
+
+fn move_vertical<F>(editor: &EditorState, new: F) -> NavigationCommand
+where
+    F: Fn(usize) -> usize,
+{
     let (x, y) = editor.cursor_pos_abs();
-
-    let delta = cmp::min(n, editor.lines.len() - 1 - y);
-    let T(new_pos) = t(x, y) + t(0, delta);
-
-    move_to_abs(editor, new_pos)
+    move_to_abs(editor, (x, new(y)))
 }
 
 pub fn move_document_start(editor: &EditorState) -> NavigationCommand {
