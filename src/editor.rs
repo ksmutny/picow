@@ -35,7 +35,7 @@ impl Editor {
     pub fn run(&mut self) -> io::Result<()> {
         Editor::open()?;
         self.refresh();
-        self.move_to(1, 1);
+        self.queue((ScrollCommand::NoScroll, CursorCommand::MoveTo(1, 1)));
         self.event_loop()?;
         Editor::close()
     }
@@ -109,17 +109,6 @@ impl Editor {
         }
     }
 
-    fn move_to(&mut self, x: u16, y: u16) {
-        let eof_y = self.state.lines.len() - self.state.scroll_top();
-        let new_y = y.clamp(1, eof_y as u16);
-
-        let eol = self.line_at(new_y).len() as u16 + 1;
-        let new_x = x.clamp(1, eol);
-
-        self.state.cursor_pos = (new_x, new_y);
-        self.commands.queue(Command::MoveTo(new_x, new_y))
-    }
-
     fn scroll_to(&mut self, x: usize, y: usize) {
         self.state.scroll_pos = (x, cmp::min(y, self.state.lines.len() - 1));
         self.refresh()
@@ -132,10 +121,6 @@ impl Editor {
 
     fn scroll_down(&mut self, delta: usize) {
         self.scroll_to(self.state.scroll_left(), self.state.scroll_top() + delta);
-    }
-
-    fn line_at(&self, y: u16) -> &str {
-        &self.state.lines[self.state.scroll_top() + y as usize - 1]
     }
 
 
