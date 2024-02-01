@@ -7,7 +7,6 @@ mod parse_editor;
 
 mod move_up {
     use super::parse_editor::parse_test_case;
-    use picow::editor::navigation::move_up;
 
     test_nav!(
         move_up_1_from_line_2
@@ -56,7 +55,6 @@ mod move_up {
 
 mod move_down {
     use super::parse_editor::parse_test_case;
-    use picow::editor::navigation::move_down;
 
     test_nav!(
         move_to_scree_bottom
@@ -115,7 +113,6 @@ mod move_down {
 
 mod document_start_end {
     use super::parse_editor::parse_test_case;
-    use picow::editor::navigation::{move_document_start, move_document_end};
 
     test_nav!(
         move_to_document_start
@@ -148,7 +145,6 @@ mod document_start_end {
 
 mod move_horizoval {
     use super::parse_editor::parse_test_case;
-    use picow::editor::navigation::{move_line_start, move_line_end, move_left, move_right};
 
     test_nav!(
         move_to_line_start

@@ -57,19 +57,19 @@ impl Editor {
 
                         (Char(c), _) => self.commands.queue(Command::Print(c.to_string())),
 
-                        (Up, CTRL) => self.queue(navigation::scroll_up(&self.state, 1)),
-                        (Down, CTRL) => self.queue(navigation::scroll_down(&self.state, 1)),
-                        (Home, CTRL) =>  self.queue(navigation::move_document_start(&self.state)),
-                        (End, CTRL) =>  self.queue(navigation::move_document_end(&self.state)),
+                        (Up, CTRL) => self.queue(self.state.scroll_up(1)),
+                        (Down, CTRL) => self.queue(self.state.scroll_down(1)),
+                        (Home, CTRL) =>  self.queue(self.state.move_document_start()),
+                        (End, CTRL) =>  self.queue(self.state.move_document_end()),
 
-                        (Right, _) => self.queue(navigation::move_right(&self.state)),
-                        (Left, _) => self.queue(navigation::move_left(&self.state)),
-                        (Up, _) => self.queue(navigation::move_up(&self.state, 1)),
-                        (Down, _) => self.queue(navigation::move_down(&self.state, 1)),
-                        (Home, _) => self.queue(navigation::move_line_start(&self.state)),
-                        (End, _) => self.queue(navigation::move_line_end(&self.state)),
-                        (PageUp, _) => self.queue(navigation::move_up(&self.state, self.state.viewport_height() as usize - 1)),
-                        (PageDown, _) =>  self.queue(navigation::move_down(&self.state, self.state.viewport_height() as usize - 1)),
+                        (Right, _) => self.queue(self.state.move_right()),
+                        (Left, _) => self.queue(self.state.move_left()),
+                        (Up, _) => self.queue(self.state.move_up(1)),
+                        (Down, _) => self.queue(self.state.move_down(1)),
+                        (Home, _) => self.queue(self.state.move_line_start()),
+                        (End, _) => self.queue(self.state.move_line_end()),
+                        (PageUp, _) => self.queue(self.state.move_up(self.state.viewport_height() as usize - 1)),
+                        (PageDown, _) =>  self.queue(self.state.move_down(self.state.viewport_height() as usize - 1)),
                         _ => {}
                     }
                 },
@@ -77,9 +77,9 @@ impl Editor {
                     use MouseButton::*;
 
                     match kind {
-                        MouseEventKind::Down(Left) => self.queue(navigation::click(&self.state, column + 1, row + 1)),
-                        MouseEventKind::ScrollDown => self.queue(navigation::scroll_down(&self.state, 1)),
-                        MouseEventKind::ScrollUp => self.queue(navigation::scroll_up(&self.state, 1)),
+                        MouseEventKind::Down(Left) => self.queue(self.state.click(column + 1, row + 1)),
+                        MouseEventKind::ScrollDown => self.queue(self.state.scroll_down(1)),
+                        MouseEventKind::ScrollUp => self.queue(self.state.scroll_up(1)),
                         _ => {}
                     }
                 },
