@@ -41,13 +41,20 @@ fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> Navi
         (min(editor.vertical_nav.x(x_abs), line_len) + 1) as u16,
         (y_abs - new_scroll_top + 1) as u16
     );
+
+    let move_cmd = if (new_x, new_y) != editor.cursor_pos {
+        MoveTo(new_x, new_y)
+    } else {
+        NoMove
+    };
+
     let scroll_cmd = if new_scroll_top != scroll_top {
         ScrollTo(0, new_scroll_top)
     } else {
         NoScroll
     };
 
-    (scroll_cmd, MoveTo(new_x, new_y))
+    (scroll_cmd, move_cmd)
 }
 
 pub fn move_up(editor: &EditorState, n: usize) -> NavigationCommand {
@@ -66,13 +73,47 @@ where
     move_to_abs(editor, (x, new(y)))
 }
 
+pub fn move_left(editor: &EditorState) -> NavigationCommand {
+    let move_to = match editor.cursor_pos_abs() {
+        (0, 0) => (0, 0),
+        (0, y) => line_end(editor, y - 1),
+        (x, y) => (x - 1, y)
+    };
+    move_to_abs(editor, move_to)
+}
+
+pub fn move_right(editor: &EditorState) -> NavigationCommand {
+    let (x, y) = editor.cursor_pos_abs();
+    let move_to = if x < editor.lines[y].len() {
+        (x + 1, y)
+    } else if y < editor.lines.len() - 1 {
+        (0, y + 1)
+    } else {
+        (x, y)
+    };
+    move_to_abs(editor, move_to)
+}
+
+pub fn move_line_start(editor: &EditorState) -> NavigationCommand {
+    move_to_abs(editor, (0, editor.cursor_y_abs()))
+}
+
+pub fn move_line_end(editor: &EditorState) -> NavigationCommand {
+    move_to_abs(editor, line_end(editor, editor.cursor_y_abs()))
+}
+
 pub fn move_document_start(editor: &EditorState) -> NavigationCommand {
     move_to_abs(editor, (0, 0))
 }
 
 pub fn move_document_end(editor: &EditorState) -> NavigationCommand {
-    let lines = editor.lines.len();
-    let last_line_len = editor.lines[lines - 1].len();
+    move_to_abs(editor, last_line_end(editor))
+}
 
-    move_to_abs(editor, (last_line_len, lines - 1))
+fn line_end(editor: &EditorState, y: usize) -> ScrollPosition {
+    (editor.lines[y].len(), y)
+}
+
+fn last_line_end(editor: &EditorState) -> ScrollPosition {
+    line_end(editor, editor.lines.len() - 1)
 }

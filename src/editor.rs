@@ -62,12 +62,12 @@ impl Editor {
                         (Home, CTRL) =>  self.queue(navigation::move_document_start(&self.state)),
                         (End, CTRL) =>  self.queue(navigation::move_document_end(&self.state)),
 
-                        (Right, _) =>  self.move_right(1),
-                        (Left, _) =>  self.move_left(1),
+                        (Right, _) => self.queue(navigation::move_right(&self.state)),
+                        (Left, _) => self.queue(navigation::move_left(&self.state)),
                         (Up, _) => self.queue(navigation::move_up(&self.state, 1)),
-                        (Down, _) =>  self.queue(navigation::move_down(&self.state, 1)),
-                        (Home, _) =>  self.move_home_line(),
-                        (End, _) =>  self.move_end_line(),
+                        (Down, _) => self.queue(navigation::move_down(&self.state, 1)),
+                        (Home, _) => self.queue(navigation::move_line_start(&self.state)),
+                        (End, _) => self.queue(navigation::move_line_end(&self.state)),
                         (PageUp, _) => self.queue(navigation::move_up(&self.state, self.state.viewport_height() as usize - 1)),
                         (PageDown, _) =>  self.queue(navigation::move_down(&self.state, self.state.viewport_height() as usize - 1)),
                         _ => {}
@@ -120,38 +120,6 @@ impl Editor {
         self.commands.queue(Command::MoveTo(new_x, new_y))
     }
 
-    fn move_right(&mut self, n: u16) {
-        let (x, y) = self.state.cursor_pos;
-        let row_len = self.line_at(y).len() as u16;
-
-        if x + n > row_len + 1 {
-            self.move_to(1, y + 1)
-        } else {
-            self.move_to(x + n, y)
-        }
-    }
-
-    fn move_left(&mut self, n: u16) {
-        let (x, y) = self.state.cursor_pos;
-
-        if x <= n && self.curr_line_idx() > 0 {
-            self.move_to(self.line_at(y - 1).len() as u16 + 1, y - 1)
-        } else {
-            self.move_to(x - n, y)
-        }
-    }
-
-    fn move_home_line(&mut self) {
-        self.move_to(1, self.state.cursor_y())
-    }
-
-    fn move_end_line(&mut self) {
-        let y = self.state.cursor_y();
-        let row_len = self.line_at(y).len() as u16;
-
-        self.move_to(row_len + 1, y)
-    }
-
     fn scroll_to(&mut self, y: usize) {
         self.state.scroll_pos = (0, cmp::min(y, self.state.lines.len() - 1));
         self.refresh()
@@ -164,10 +132,6 @@ impl Editor {
 
     fn scroll_down(&mut self, delta: usize) {
         self.scroll_to(self.state.scroll_top() + delta);
-    }
-
-    fn curr_line_idx(&self) -> usize {
-        self.state.scroll_top() + self.state.cursor_y() as usize - 1
     }
 
     fn line_at(&self, y: u16) -> &str {

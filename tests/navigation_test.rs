@@ -135,3 +135,109 @@ mod document_start_end {
         "___☼▯        "
     );
 }
+
+mod move_horizoval {
+    use super::parse_editor::parse_test_case;
+    use picow::editor::navigation::{move_line_start, move_line_end, move_left, move_right};
+
+    test_nav!(
+        move_to_line_start
+        move_line_start();
+        "┌───────────┐",
+        "▯_____▮     │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_to_line_start_no_move
+        move_line_start();
+        "┌───────────┐",
+        "▮_____      │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_to_line_send
+        move_line_end();
+        "┌───────────┐",
+        "│__▮__▯     │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_left_within_line
+        move_left();
+        "┌───────────┐",
+        "│__▯▮__     │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_left_prev_line
+        move_left();
+        "┌───────────┐",
+        "│____▯      │",
+        "▮______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_left_prev_line_scroll
+        move_left();
+        "╔________▯   ",
+        "▮───────────┐",
+        "│____       │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_left_document_start
+        move_left();
+        "▮───────────┐",
+        "│____       │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_right_within_line
+        move_right();
+        "┌───────────┐",
+        "│__▮▯__     │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_right_next_line
+        move_right();
+        "┌───────────┐",
+        "│____.▮     │",
+        "▯______     │",
+        "└───────────┘"
+    );
+
+    test_nav!(
+        move_right_next_line_scroll
+        move_right();
+        "┌───────────┐",
+        "╔____       │",
+        "│____       │",
+        "└───────.▮  ┘",
+        "▯______     │"
+    );
+
+    test_nav!(
+        move_right_document_end
+        move_right();
+        "┌───────────┐",
+        "│____☼▮     │",
+        "│           │",
+        "└───────────┘"
+    );
+}

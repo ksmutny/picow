@@ -22,8 +22,13 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
 
     for (i, line) in input.iter().enumerate() {
         if line.contains("┌") {
-            let scroll_top = pos(line, '┌');
-            scroll_pos = (scroll_top, i);
+            let scroll_left = pos(line, '┌');
+            scroll_pos = (scroll_left, i);
+            scroll_pos_identified = true;
+        }
+
+        if line.starts_with("▮─") && !scroll_pos_identified {
+            scroll_pos = (0, i);
             scroll_pos_identified = true;
         }
 
@@ -74,7 +79,13 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         }
 
         if !eof_reached {
-            let processed_line = line.replace(['│', '▯'], " ").replace(['┌', '─', '┐', '└', '┘', '╔', '▮', '☼'], "_").trim_end().to_string();
+            let processed_line = line
+                .replace(['▮', '┘'], if line.contains('.') || line.contains('☼') { " " } else { "_" } )
+                .replace(['│', '▯'], " ")
+                .replace(['┌', '─', '┐', '└', '╔', '▮', '.', '☼'], "_")
+                .trim_end()
+                .to_string();
+
             lines.push(processed_line);
 
             if eof_found { eof_reached = true; }
@@ -123,6 +134,35 @@ fn move_cursor_no_scroll() {
     assert_eq!(tc.expected_scroll, NoScroll);
 }
 
+#[test]
+fn no_move_cursor() {
+    let tc = parse_test_case(vec![
+    //   1234567890123
+        "┌───────────┐", // 1
+        "│_____▮     │", // 2
+        "│______     │", // 3
+        "└───────────┘"  // 4
+    ]);
+
+    let state = tc.editor_state;
+    assert_eq!(state.cursor_pos, (7, 2));
+    assert_eq!(tc.expected_cursor, NoMove);
+}
+
+#[test]
+fn cursor_top_left() {
+    let tc = parse_test_case(vec![
+    //   1234567890123
+        "________     ",
+        "▮───────────┐", // 1
+        "│_____      │", // 2
+        "│______     │", // 3
+        "└───────────┘"  // 4
+    ]);
+
+    let state = tc.editor_state;
+    assert_eq!(state.cursor_pos, (1, 1));
+}
 
 #[test]
 fn move_cursor_and_scroll() {
@@ -178,6 +218,25 @@ fn document_start() {
 
     assert_eq!(tc.expected_cursor, MoveTo(1, 1));
     assert_eq!(tc.expected_scroll, ScrollTo(0, 0));
+}
+
+#[test]
+fn eol() {
+    let tc = parse_test_case(vec![
+    //   1234567890123
+        "┌───────────┐",
+        "│_____.▮    │",
+        "└───────────┘"
+    ]);
+
+    let state = tc.editor_state;
+    assert_eq!(state.lines, vec![
+    //   1234567890123
+        "_____________",
+        " ______",
+        "_____________",
+    ]);
+    assert_eq!(state.cursor_pos, (8, 2));
 }
 
 #[test]
