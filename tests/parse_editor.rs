@@ -92,6 +92,10 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         }
     }
 
+    if expected_cursor == Some(cursor_pos) {
+        expected_cursor = None;
+    }
+
     TestCase {
         editor_state: EditorState {
             viewport_size,
@@ -147,6 +151,22 @@ fn no_move_cursor() {
     let state = tc.editor_state;
     assert_eq!(state.cursor_pos, (7, 2));
     assert_eq!(tc.expected_cursor, NoMove);
+}
+
+#[test]
+fn scroll_left_cursor_no_move() {
+    let tc = parse_test_case(vec![
+    //   1234567890123
+        "╔┌───────────┐",
+        "▯▮____       │",
+        "_│______     │",
+        "_└───────────┘"
+    ]);
+
+    let state = tc.editor_state;
+    assert_eq!(state.cursor_pos, (1, 2));
+    assert_eq!(tc.expected_cursor, NoMove);
+    assert_eq!(tc.expected_scroll, ScrollTo(0, 0));
 }
 
 #[test]

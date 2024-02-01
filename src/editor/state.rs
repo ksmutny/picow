@@ -12,6 +12,7 @@ pub struct EditorState {
 }
 
 impl EditorState {
+    pub fn viewport_usize(&self) -> ScrollPosition { (self.viewport_width() as usize, self.viewport_height() as usize) }
     pub fn viewport_width(&self) -> u16 { self.viewport_size.0 }
     pub fn viewport_height(&self) -> u16 { self.viewport_size.1 }
 

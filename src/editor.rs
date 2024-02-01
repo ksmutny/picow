@@ -97,7 +97,7 @@ impl Editor {
 
         let (scroll_cmd, cursor_cmd) = commands;
         match scroll_cmd {
-            ScrollTo(_, y) => self.scroll_to(y),
+            ScrollTo(x, y) => self.scroll_to(x, y),
             NoScroll => {}
         }
         match cursor_cmd {
@@ -120,18 +120,18 @@ impl Editor {
         self.commands.queue(Command::MoveTo(new_x, new_y))
     }
 
-    fn scroll_to(&mut self, y: usize) {
-        self.state.scroll_pos = (0, cmp::min(y, self.state.lines.len() - 1));
+    fn scroll_to(&mut self, x: usize, y: usize) {
+        self.state.scroll_pos = (x, cmp::min(y, self.state.lines.len() - 1));
         self.refresh()
     }
 
     fn scroll_up(&mut self, delta: usize) {
         let delta = cmp::min(delta, self.state.scroll_top());
-        self.scroll_to(self.state.scroll_top() - delta);
+        self.scroll_to(self.state.scroll_left(), self.state.scroll_top() - delta);
     }
 
     fn scroll_down(&mut self, delta: usize) {
-        self.scroll_to(self.state.scroll_top() + delta);
+        self.scroll_to(self.state.scroll_left(), self.state.scroll_top() + delta);
     }
 
     fn line_at(&self, y: u16) -> &str {
@@ -145,7 +145,12 @@ impl Editor {
         for i in 0..self.state.viewport_height() {
             if let Some(row) = self.state.lines.get(self.state.scroll_top() + i as usize) {
                 self.commands.queue(Command::MoveTo(1, i + 1));
-                self.commands.queue(Command::Print(row.to_string()));
+
+                let start = self.state.scroll_left() as usize;
+                let len = cmp::min(row.len() - cmp::min(start, row.len()), self.state.viewport_width() as usize);
+                let slice = if row.len() > start && len > 0 { &row[start..start + len] } else { "" };
+
+                self.commands.queue(Command::Print(slice.to_string()));
             } else {
                 break;
             }
@@ -160,8 +165,9 @@ impl Editor {
     fn status_bar(&mut self) {
         let (width, height) = self.state.viewport_size;
         let (x, y) = self.state.cursor_pos;
+        let (x_abs, y_abs) = self.state.cursor_pos_abs();
 
-        let status = format!("{}x{} | {} {} | {} | {}", width, height, x, y, self.state.scroll_top(), self.delimiter_label());
+        let status = format!("{}x{} | {} {} | {} | {}", width, height, (x_abs + 1), (y_abs + 1), self.state.scroll_top(), self.delimiter_label());
 
         self.commands.queue(Command::MoveTo(1, self.terminal_height()));
         self.commands.queue(Command::ClearLine);

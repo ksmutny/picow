@@ -3,7 +3,7 @@ mod tuple_ops;
 
 use std::cmp::{max,min};
 
-use super::state::{EditorState, ScrollPosition};
+use super::state::{CursorPosition, EditorState, ScrollPosition};
 use CursorCommand::*;
 use ScrollCommand::*;
 
@@ -22,39 +22,45 @@ pub enum ScrollCommand {
 
 pub type NavigationCommand = (ScrollCommand, CursorCommand);
 
-fn move_to_abs(editor: &EditorState, new_cursor_pos_abs: ScrollPosition) -> NavigationCommand {
-    let (x_abs, y_abs) = new_cursor_pos_abs;
-    let line_len = editor.lines[y_abs].len();
+fn move_to_abs(editor: &EditorState, pos_abs: ScrollPosition) -> NavigationCommand {
+    let new_cursor_abs = within_text(editor, pos_abs);
+    let new_scroll_pos = scroll_into_view(editor, new_cursor_abs);
+    let new_cursor_pos = to_relative(new_cursor_abs, new_scroll_pos);
 
-    let scroll_top = editor.scroll_top();
-    let height = editor.viewport_height() as usize;
+    (scroll_cmd(editor, new_scroll_pos), move_cmd(editor, new_cursor_pos))
+}
 
-    let new_scroll_top = if y_abs < scroll_top {
-        y_abs
-    } else if y_abs >= scroll_top + height {
-        y_abs - height + 1
-    } else {
-        scroll_top
-    };
+fn within_text(editor: &EditorState, (x_abs, y_abs): ScrollPosition) -> ScrollPosition {
+    let new_y_abs = min(y_abs, editor.lines.len() - 1);
+    let new_x_abs = min(editor.vertical_nav.x(x_abs), editor.lines[new_y_abs].len());
+    (new_x_abs, new_y_abs)
+}
 
-    let (new_x, new_y) = (
-        (min(editor.vertical_nav.x(x_abs), line_len) + 1) as u16,
-        (y_abs - new_scroll_top + 1) as u16
-    );
+fn scroll_into_view(editor: &EditorState, (x_abs, y_abs): ScrollPosition) -> ScrollPosition {
+    let (scroll_left, scroll_top) = editor.scroll_pos;
+    let (width, height) = editor.viewport_usize();
 
-    let move_cmd = if (new_x, new_y) != editor.cursor_pos {
-        MoveTo(new_x, new_y)
-    } else {
-        NoMove
-    };
+    (
+        if x_abs < scroll_left { x_abs }
+        else if x_abs >= scroll_left + width { x_abs - width + 1 }
+        else { scroll_left },
 
-    let scroll_cmd = if new_scroll_top != scroll_top {
-        ScrollTo(0, new_scroll_top)
-    } else {
-        NoScroll
-    };
+        if y_abs < scroll_top { y_abs }
+        else if y_abs >= scroll_top + height { y_abs - height + 1 }
+        else { scroll_top }
+    )
+}
 
-    (scroll_cmd, move_cmd)
+fn to_relative((x_abs, y_abs): ScrollPosition, (scroll_left, scroll_top): ScrollPosition) -> CursorPosition {
+    ((x_abs - scroll_left + 1) as u16, (y_abs - scroll_top + 1) as u16)
+}
+
+fn move_cmd(editor: &EditorState, new_pos @ (x, y): CursorPosition) -> CursorCommand {
+    if new_pos == editor.cursor_pos { NoMove } else { MoveTo(x, y) }
+}
+
+fn scroll_cmd(editor: &EditorState, new_pos @ (x, y): ScrollPosition) -> ScrollCommand {
+    if new_pos == editor.scroll_pos { NoScroll } else { ScrollTo(x, y) }
 }
 
 pub fn move_up(editor: &EditorState, n: usize) -> NavigationCommand {

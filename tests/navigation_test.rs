@@ -90,6 +90,16 @@ mod move_down {
     );
 
     test_nav!(
+        move_to_shorter_line_scroll_left
+        move_down(1);
+        "______┌───────────┐",
+        "_╔____│___        │",
+        "______│______     │",
+        "______└─────────▮─┘",
+        "_▯                 "
+    );
+
+    test_nav!(
         move_to_eof
         move_down(5);
       // 12345678901234
@@ -186,7 +196,17 @@ mod move_horizoval {
     );
 
     test_nav!(
-        move_left_prev_line_scroll
+        move_left_scroll_left
+        move_left();
+        "___________   ",
+        "╔┌───────────┐",
+        "▯▮____       │",
+        "_│______     │",
+        "_└───────────┘"
+    );
+
+    test_nav!(
+        move_left_prev_line_scroll_up
         move_left();
         "╔________▯   ",
         "▮───────────┐",
@@ -220,6 +240,16 @@ mod move_horizoval {
         "│____.▮     │",
         "▯______     │",
         "└───────────┘"
+    );
+
+    test_nav!(
+        move_right_scroll_right
+        move_right();
+        "______________________",
+        "_┌╔──────────┐____    ",
+        "_│____       │        ",
+        "_│___________▮▯___    ",
+        "_└───────────┘        "
     );
 
     test_nav!(
