@@ -21,7 +21,7 @@ impl Editor {
     pub fn new(rows: Vec<String>, delimiter: String) -> Self {
         let terminal_size = terminal::terminal_size().unwrap();
         Self {
-            state: EditorState::new(rows, terminal_size),
+            state: EditorState::new(rows, terminal_size, (0, 0), (0, 0)),
             renderer: EditorRenderer::new(),
             delimiter,
         }

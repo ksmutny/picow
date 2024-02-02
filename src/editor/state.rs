@@ -8,18 +8,23 @@ pub struct EditorState {
     pub scroll_pos: AbsPosition,
     pub cursor_pos: AbsPosition,
     pub lines: Vec<String>,
-    pub vertical_nav: VerticalNavigation,
+    vertical_nav: VerticalNavigation,
+}
+
+struct VerticalNavigation {
+    in_progress: bool,
+    last_x: usize,
 }
 
 impl EditorState {
 
-    pub fn new(lines: Vec<String>, viewport_size: ViewportDimensions) -> Self {
+    pub fn new(lines: Vec<String>, viewport_size: ViewportDimensions, scroll_pos: AbsPosition, cursor_pos: AbsPosition) -> Self {
         Self {
             viewport_size,
-            scroll_pos: (0, 0),
-            cursor_pos: (0, 0),
+            scroll_pos,
+            cursor_pos,
             lines,
-            vertical_nav: VerticalNavigation::new(),
+            vertical_nav: VerticalNavigation { in_progress: false, last_x: 0 },
         }
     }
 
@@ -34,44 +39,17 @@ impl EditorState {
     pub fn cursor_y(&self) -> usize { self.cursor_pos.1 }
 
     pub fn keep_vertical_navigation(&mut self) {
-        self.vertical_nav.start(self.cursor_x());
+        if !self.vertical_nav.in_progress {
+            self.vertical_nav.in_progress = true;
+            self.vertical_nav.last_x = self.cursor_x();
+        }
     }
 
     pub fn end_vertical_navigation(&mut self) {
-        self.vertical_nav.end();
+        self.vertical_nav.in_progress = false;
     }
 
     pub fn vertical_navigation_x_or(&self, x: usize) -> usize {
-        self.vertical_nav.x(x)
-    }
-}
-
-pub struct VerticalNavigation {
-    in_progress: bool,
-    last_x: usize,
-}
-
-impl VerticalNavigation {
-
-    pub fn new() -> Self {
-        VerticalNavigation {
-            in_progress: false,
-            last_x: 0,
-        }
-    }
-
-    fn start(&mut self, x: usize) {
-        if !self.in_progress {
-            self.in_progress = true;
-            self.last_x = x;
-        }
-    }
-
-    fn end(&mut self) {
-        self.in_progress = false;
-    }
-
-    fn x(&self, x: usize) -> usize {
-        if self.in_progress { self.last_x } else { x }
+        if self.vertical_nav.in_progress { self.vertical_nav.last_x } else { x }
     }
 }

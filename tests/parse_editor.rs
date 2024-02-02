@@ -1,6 +1,6 @@
 use picow::editor::{
     navigation::{CursorCommand::{self, *}, ScrollCommand::{self, *}},
-    state::{EditorState, AbsPosition, VerticalNavigation, ViewportDimensions}
+    state::{EditorState, AbsPosition, ViewportDimensions}
 };
 
 pub struct TestCase {
@@ -85,13 +85,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     }
 
     TestCase {
-        editor_state: EditorState {
-            viewport_size,
-            scroll_pos,
-            cursor_pos,
-            lines,
-            vertical_nav: VerticalNavigation::new(),
-        },
+        editor_state: EditorState::new(lines, viewport_size, scroll_pos, cursor_pos),
         expected_cursor: expected_cursor.map(|pos| MoveTo(pos.0, pos.1)).unwrap_or(NoMove),
         expected_scroll: expected_scroll.map(|pos| ScrollTo(pos.0, pos.1)).unwrap_or(NoScroll),
     }
