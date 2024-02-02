@@ -23,7 +23,7 @@ impl Editor {
             state: EditorState {
                 viewport_size: terminal_size,
                 scroll_pos: (0, 0),
-                cursor_pos: (1, 1),
+                cursor_pos: (0, 0),
                 lines: rows,
                 vertical_nav: VerticalNavigation::new(),
             },
@@ -35,7 +35,7 @@ impl Editor {
     pub fn run(&mut self) -> io::Result<()> {
         Editor::open()?;
         self.refresh();
-        self.queue((ScrollCommand::NoScroll, CursorCommand::MoveTo(1, 1)));
+        self.refresh_cursor();
         self.event_loop()?;
         Editor::close()
     }
@@ -48,7 +48,7 @@ impl Editor {
                     const CTRL: KeyModifiers = KeyModifiers::CONTROL;
 
                     match code {
-                        Up | Down | PageUp | PageDown => self.state.vertical_nav.start(self.state.cursor_x_abs()),
+                        Up | Down | PageUp | PageDown => self.state.vertical_nav.start(self.state.cursor_x()),
                         _ => self.state.vertical_nav.end(),
                     }
 
@@ -98,7 +98,7 @@ impl Editor {
         }
         if let CursorCommand::MoveTo(x, y) = cursor_cmd {
             self.state.cursor_pos = (x, y);
-            self.commands.queue(Command::MoveTo(x, y));
+            self.refresh_cursor();
         }
     }
 
@@ -120,6 +120,13 @@ impl Editor {
         }
     }
 
+    fn refresh_cursor(&mut self) {
+        let (x_abs, y_abs) = self.state.cursor_pos;
+        let (scroll_left, scroll_top) = self.state.scroll_pos;
+        let (x, y) = ((x_abs - scroll_left + 1) as u16, (y_abs - scroll_top + 1) as u16);
+        self.commands.queue(Command::MoveTo(x, y))
+    }
+
     fn resize(&mut self, terminal_size: Coordinates) {
         self.state.viewport_size = (terminal_size.0, terminal_size.1 - 1);
         self.refresh()
@@ -128,14 +135,13 @@ impl Editor {
     fn status_bar(&mut self) {
         let (width, height) = self.state.viewport_size;
         let (x, y) = self.state.cursor_pos;
-        let (x_abs, y_abs) = self.state.cursor_pos_abs();
 
-        let status = format!("{}x{} | {} {} | {} | {}", width, height, (x_abs + 1), (y_abs + 1), self.state.scroll_top(), self.delimiter_label());
+        let status = format!("{}x{} | {} {} | {} | {}", width, height, x + 1, y + 1, self.state.scroll_top() + 1, self.delimiter_label());
 
         self.commands.queue(Command::MoveTo(1, self.terminal_height()));
         self.commands.queue(Command::ClearLine);
         self.commands.queue(Command::Print(status));
-        self.commands.queue(Command::MoveTo(x, y))
+        self.refresh_cursor();
     }
 
     fn delimiter_label(&self) -> &str {
