@@ -8,7 +8,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifier
 
 use crate::terminal::{self, *};
 
-use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, renderer::EditorRenderer, state::{EditorState, VerticalNavigation}};
+use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, renderer::EditorRenderer, state::EditorState};
 
 
 pub struct Editor {
@@ -21,13 +21,7 @@ impl Editor {
     pub fn new(rows: Vec<String>, delimiter: String) -> Self {
         let terminal_size = terminal::terminal_size().unwrap();
         Self {
-            state: EditorState {
-                viewport_size: terminal_size,
-                scroll_pos: (0, 0),
-                cursor_pos: (0, 0),
-                lines: rows,
-                vertical_nav: VerticalNavigation::new(),
-            },
+            state: EditorState::new(rows, terminal_size),
             renderer: EditorRenderer::new(),
             delimiter,
         }

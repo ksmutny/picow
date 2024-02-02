@@ -12,6 +12,17 @@ pub struct EditorState {
 }
 
 impl EditorState {
+
+    pub fn new(lines: Vec<String>, viewport_size: ViewportDimensions) -> Self {
+        Self {
+            viewport_size,
+            scroll_pos: (0, 0),
+            cursor_pos: (0, 0),
+            lines,
+            vertical_nav: VerticalNavigation::new(),
+        }
+    }
+
     pub fn viewport_usize(&self) -> AbsPosition { (self.viewport_width() as usize, self.viewport_height() as usize) }
     pub fn viewport_width(&self) -> u16 { self.viewport_size.0 }
     pub fn viewport_height(&self) -> u16 { self.viewport_size.1 }
