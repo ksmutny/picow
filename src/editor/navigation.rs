@@ -32,8 +32,8 @@ impl EditorState {
     }
 
     fn within_text(&self, (x, y): AbsPosition) -> AbsPosition {
-        let new_y = min(y, self.lines.len() - 1);
-        let new_x = min(self.vertical_nav.x(x), self.lines[new_y].len());
+        let new_y = min(y, self.last_line_y());
+        let new_x = min(self.vertical_nav.x(x), self.line_len(new_y));
         (new_x, new_y)
     }
 
@@ -75,7 +75,7 @@ impl EditorState {
     }
 
     pub fn move_down(&self, n: usize) -> NavigationCommand {
-        self.move_vertical(|y| y + min(n, self.lines.len() - 1 - y))
+        self.move_vertical(|y| y + min(n, self.last_line_y() - y))
     }
 
     fn move_vertical<F>(&self, new: F) -> NavigationCommand
@@ -96,13 +96,10 @@ impl EditorState {
     }
 
     pub fn move_right(&self) -> NavigationCommand {
-        let (x, y) = self.cursor_pos;
-        let move_to = if x < self.lines[y].len() {
-            (x + 1, y)
-        } else if y < self.lines.len() - 1 {
-            (0, y + 1)
-        } else {
-            (x, y)
+        let move_to = match self.cursor_pos {
+            (x, y) if x < self.line_len(y) => (x + 1, y),
+            (_, y) if y < self.last_line_y() => (0, y + 1),
+            _ => self.cursor_pos
         };
         self.move_to(move_to)
     }
@@ -124,15 +121,23 @@ impl EditorState {
     }
 
     fn line_end(&self, y: usize) -> AbsPosition {
-        (self.lines[y].len(), y)
+        (self.line_len(y), y)
+    }
+
+    fn line_len(&self, y: usize) -> usize {
+        self.lines[y].len()
     }
 
     fn last_line_end(&self) -> AbsPosition {
-        self.line_end(self.lines.len() - 1)
+        self.line_end(self.last_line_y())
+    }
+
+    fn last_line_y(&self) -> usize {
+        self.lines.len() - 1
     }
 
     pub fn scroll_to(&self, (scroll_left, scroll_top): AbsPosition) -> NavigationCommand {
-        let new_scroll_top = min(scroll_top, self.lines.len() - 1);
+        let new_scroll_top = min(scroll_top, self.last_line_y());
         (self.scroll_cmd((scroll_left, new_scroll_top)), NoMove)
     }
 
@@ -141,7 +146,7 @@ impl EditorState {
     }
 
     pub fn scroll_down(&self, n: usize) -> NavigationCommand {
-        self.scroll_vertical(|y| y + min(n, self.lines.len() - 1 - y))
+        self.scroll_vertical(|y| y + min(n, self.last_line_y() - y))
     }
 
     fn scroll_vertical<F>(&self, new: F) -> NavigationCommand
