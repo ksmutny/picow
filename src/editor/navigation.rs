@@ -42,15 +42,13 @@ impl EditorState {
         let (scroll_left, scroll_top) = self.scroll_pos;
         let (width, height) = self.viewport_usize();
 
-        (
-            if x_abs < scroll_left { x_abs }
-            else if x_abs >= scroll_left + width { x_abs - width + 1 }
-            else { scroll_left },
+        let scroll_into = |cursor_pos, viewport_start, viewport_size| {
+            if cursor_pos < viewport_start { cursor_pos }
+            else if cursor_pos >= viewport_start + viewport_size { cursor_pos - viewport_size + 1 }
+            else { viewport_start }
+        };
 
-            if y_abs < scroll_top { y_abs }
-            else if y_abs >= scroll_top + height { y_abs - height + 1 }
-            else { scroll_top }
-        )
+        (scroll_into(x_abs, scroll_left, width), scroll_into(y_abs, scroll_top, height))
     }
 
     fn to_relative((x_abs, y_abs): ScrollPosition, (scroll_left, scroll_top): ScrollPosition) -> CursorPosition {
