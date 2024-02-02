@@ -29,19 +29,29 @@ impl EditorRenderer {
     pub fn refresh(&mut self, state: &EditorState) {
         self.commands.queue(Command::Clear);
 
-        for i in 0..state.viewport_height() {
-            if let Some(row) = state.lines.get(state.scroll_top() + i as usize) {
-                self.commands.queue(Command::MoveTo(1, i + 1));
-
-                let start = state.scroll_left() as usize;
-                let len = min(row.len() - min(start, row.len()), state.viewport_width() as usize);
-                let slice = if row.len() > start && len > 0 { &row[start..start + len] } else { "" };
-
-                self.commands.queue(Command::Print(slice.to_string()));
-            } else {
-                break;
-            }
+        for (i, line) in self.visible_lines(state).iter().enumerate() {
+            self.commands.queue(Command::MoveTo(1, 1 + i as u16));
+            let slice = self.visible_part(line, state);
+            self.commands.queue(Command::Print(slice.to_string()));
         }
+    }
+
+    fn visible_lines<'a>(&self, state: &'a EditorState) -> &'a [String] {
+        let top = state.scroll_top();
+        let height = state.viewport_height() as usize;
+        let bottom = min(top + height, state.lines.len());
+
+        &state.lines[top..bottom]
+    }
+
+    fn visible_part<'a>(&self, line: &'a str, state: &EditorState) -> &'a str {
+        let start = state.scroll_left();
+        if line.len() <= start { return "" }
+
+        let width = state.viewport_width() as usize;
+        let len = min(line.len() - start, width);
+
+        &line[start..start + len]
     }
 
     pub fn refresh_cursor(&mut self, state: &EditorState) {
