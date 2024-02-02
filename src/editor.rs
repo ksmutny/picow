@@ -1,19 +1,20 @@
 pub mod state;
 pub mod navigation;
+pub mod renderer;
 
-use std::{cmp, io};
+use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
-use crate::terminal::{self, *, commands::Command};
+use crate::terminal::{self, *};
 
-use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, state::{EditorState, VerticalNavigation}};
+use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, renderer::EditorRenderer, state::{EditorState, VerticalNavigation}};
 
 
 pub struct Editor {
     state: EditorState,
+    renderer: EditorRenderer,
     delimiter: String,
-    commands: CommandBuffer,
 }
 
 impl Editor {
@@ -27,17 +28,18 @@ impl Editor {
                 lines: rows,
                 vertical_nav: VerticalNavigation::new(),
             },
+            renderer: EditorRenderer::new(),
             delimiter,
-            commands: CommandBuffer::new(),
         }
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        Editor::open()?;
-        self.refresh();
-        self.refresh_cursor();
+        EditorRenderer::open()?;
+        self.renderer.refresh(&self.state);
+        self.renderer.refresh_cursor(&self.state);
+
         self.event_loop()?;
-        Editor::close()
+        EditorRenderer::close()
     }
 
     fn event_loop(&mut self) -> io::Result<()> {
@@ -55,7 +57,7 @@ impl Editor {
                     match (code, modifiers) {
                         (Esc, _) => break Ok(()),
 
-                        (Char(c), _) => self.commands.queue(Command::Print(c.to_string())),
+                        // (Char(c), _) => self.commands.queue(Command::Print(c.to_string())),
 
                         (Up, CTRL) => self.queue(self.state.scroll_up(1)),
                         (Down, CTRL) => self.queue(self.state.scroll_down(1)),
@@ -86,83 +88,24 @@ impl Editor {
                 Event::Resize(width, height) => self.resize((width, height)),
                 _ => {}
             }
-            self.status_bar();
-            self.commands.execute()?;
+            self.renderer.refresh_status_bar(&self.state, &self.delimiter);
+            self.renderer.flush()?;
         }
     }
 
     fn queue(&mut self, (scroll_cmd, cursor_cmd): NavigationCommand) {
         if let ScrollCommand::ScrollTo(x, y) = scroll_cmd {
             self.state.scroll_pos = (x, y);
-            self.refresh();
+            self.renderer.refresh(&self.state);
         }
         if let CursorCommand::MoveTo(x, y) = cursor_cmd {
             self.state.cursor_pos = (x, y);
-            self.refresh_cursor();
+            self.renderer.refresh_cursor(&self.state);
         }
-    }
-
-    fn refresh(&mut self) {
-        self.commands.queue(Command::Clear);
-
-        for i in 0..self.state.viewport_height() {
-            if let Some(row) = self.state.lines.get(self.state.scroll_top() + i as usize) {
-                self.commands.queue(Command::MoveTo(1, i + 1));
-
-                let start = self.state.scroll_left() as usize;
-                let len = cmp::min(row.len() - cmp::min(start, row.len()), self.state.viewport_width() as usize);
-                let slice = if row.len() > start && len > 0 { &row[start..start + len] } else { "" };
-
-                self.commands.queue(Command::Print(slice.to_string()));
-            } else {
-                break;
-            }
-        }
-    }
-
-    fn refresh_cursor(&mut self) {
-        let (x_abs, y_abs) = self.state.cursor_pos;
-        let (scroll_left, scroll_top) = self.state.scroll_pos;
-        let (x, y) = ((x_abs - scroll_left + 1) as u16, (y_abs - scroll_top + 1) as u16);
-        self.commands.queue(Command::MoveTo(x, y))
     }
 
     fn resize(&mut self, terminal_size: Coordinates) {
         self.state.viewport_size = (terminal_size.0, terminal_size.1 - 1);
-        self.refresh()
-    }
-
-    fn status_bar(&mut self) {
-        let (width, height) = self.state.viewport_size;
-        let (x, y) = self.state.cursor_pos;
-
-        let status = format!("{}x{} | {} {} | {} | {}", width, height, x + 1, y + 1, self.state.scroll_top() + 1, self.delimiter_label());
-
-        self.commands.queue(Command::MoveTo(1, self.terminal_height()));
-        self.commands.queue(Command::ClearLine);
-        self.commands.queue(Command::Print(status));
-        self.refresh_cursor();
-    }
-
-    fn delimiter_label(&self) -> &str {
-        use crate::file::{CRLF, CR, LF};
-
-        match self.delimiter.as_str() {
-            CRLF => "CRLF",
-            CR => "CR",
-            LF => "LF",
-            _ => "?"
-        }
-    }
-
-    fn terminal_height(&self) -> u16 { self.state.viewport_height() + 1 }
-
-    fn open() -> io::Result<()> {
-        terminal::init()?;
-        Command::EnterAlternateScreen.execute()
-    }
-
-    fn close() -> io::Result<()> {
-        Command::LeaveAlternateScreen.execute()
+        self.renderer.refresh(&self.state)
     }
 }
