@@ -33,7 +33,7 @@ impl EditorState {
 
     fn within_text(&self, (x, y): AbsPosition) -> AbsPosition {
         let new_y = min(y, self.last_line_y());
-        let new_x = min(self.vertical_nav.x(x), self.line_len(new_y));
+        let new_x = min(self.vertical_navigation_x_or(x), self.line_len(new_y));
         (new_x, new_y)
     }
 

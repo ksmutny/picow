@@ -32,8 +32,19 @@ impl EditorState {
 
     pub fn cursor_x(&self) -> usize { self.cursor_pos.0 }
     pub fn cursor_y(&self) -> usize { self.cursor_pos.1 }
-}
 
+    pub fn keep_vertical_navigation(&mut self) {
+        self.vertical_nav.start(self.cursor_x());
+    }
+
+    pub fn end_vertical_navigation(&mut self) {
+        self.vertical_nav.end();
+    }
+
+    pub fn vertical_navigation_x_or(&self, x: usize) -> usize {
+        self.vertical_nav.x(x)
+    }
+}
 
 pub struct VerticalNavigation {
     in_progress: bool,
@@ -49,18 +60,18 @@ impl VerticalNavigation {
         }
     }
 
-    pub fn start(&mut self, x: usize) {
+    fn start(&mut self, x: usize) {
         if !self.in_progress {
             self.in_progress = true;
             self.last_x = x;
         }
     }
 
-    pub fn end(&mut self) {
+    fn end(&mut self) {
         self.in_progress = false;
     }
 
-    pub fn x(&self, x: usize) -> usize {
+    fn x(&self, x: usize) -> usize {
         if self.in_progress { self.last_x } else { x }
     }
 }

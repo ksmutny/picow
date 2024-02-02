@@ -44,8 +44,8 @@ impl Editor {
                     const CTRL: KeyModifiers = KeyModifiers::CONTROL;
 
                     match code {
-                        Up | Down | PageUp | PageDown => self.state.vertical_nav.start(self.state.cursor_x()),
-                        _ => self.state.vertical_nav.end(),
+                        Up | Down | PageUp | PageDown => self.state.keep_vertical_navigation(),
+                        _ => self.state.end_vertical_navigation(),
                     }
 
                     match (code, modifiers) {
