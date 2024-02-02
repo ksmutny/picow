@@ -17,6 +17,8 @@ pub fn ansi(command: &Command) -> String {
         MoveDown(n) => csi!("{}B", n),
         MoveRight(n) => csi!("{}C", n),
         MoveLeft(n) => csi!("{}D", n),
+        HideCursor => csi!("?25l"),
+        ShowCursor => csi!("?25h"),
 
         EnterAlternateScreen => csi!("?1049h{}", ansi(&MoveTo(1  , 1))),
         LeaveAlternateScreen => csi!("?1049l"),

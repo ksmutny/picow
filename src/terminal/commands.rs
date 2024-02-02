@@ -8,6 +8,8 @@ pub enum Command {
     MoveLeft(u16),
     MoveRight(u16),
     MoveDown(u16),
+    HideCursor,
+    ShowCursor,
 
     EnterAlternateScreen,
     LeaveAlternateScreen,
