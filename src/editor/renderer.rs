@@ -66,9 +66,9 @@ impl EditorRenderer {
     pub fn refresh_cursor(&mut self, state: &EditorState) {
         let (x_abs, y_abs) = state.cursor_pos;
 
-        if !state.viewport.cursor_within(state.cursor_pos) && !self.cursor_hidden {
-            self.hide_cursor()
-        } else if self.cursor_hidden {
+        if !state.viewport.cursor_within(state.cursor_pos) {
+            self.hide_cursor();
+        } else {
             self.show_cursor()
         }
 
@@ -79,11 +79,13 @@ impl EditorRenderer {
     }
 
     fn show_cursor(&mut self) {
+        if !self.cursor_hidden { return }
         self.commands.queue(Command::ShowCursor);
         self.cursor_hidden = false;
     }
 
     fn hide_cursor(&mut self) {
+        if self.cursor_hidden { return }
         self.commands.queue(Command::HideCursor);
         self.cursor_hidden = true;
     }

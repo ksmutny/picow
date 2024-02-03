@@ -96,7 +96,6 @@ impl Editor {
         }
         if let Some(MoveCursorTo(x, y)) = cursor_cmd {
             self.state.cursor_pos = (x, y);
-            self.renderer.refresh_cursor(&self.state);
         }
     }
 
