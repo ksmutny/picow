@@ -6,9 +6,11 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
-use crate::terminal::{self, *};
-
-use self::{navigation::{CursorCommand, NavigationCommand, ScrollCommand}, renderer::EditorRenderer, state::EditorState};
+use self::{
+    navigation::{CursorCommand, NavigationCommand, ScrollCommand},
+    renderer::EditorRenderer,
+    state::{EditorState, ViewportDimensions}
+};
 
 
 pub struct Editor {
@@ -19,9 +21,9 @@ pub struct Editor {
 
 impl Editor {
     pub fn new(rows: Vec<String>, delimiter: String) -> Self {
-        let terminal_size = terminal::terminal_size().unwrap();
+        let viewport = EditorRenderer::create_viewport().unwrap();
         Self {
-            state: EditorState::new(rows, terminal_size, (0, 0), (0, 0)),
+            state: EditorState::new(rows, viewport, (0, 0)),
             renderer: EditorRenderer::new(),
             delimiter,
         }
@@ -64,8 +66,8 @@ impl Editor {
                         (Down, _) => self.queue(self.state.move_down(1)),
                         (Home, _) => self.queue(self.state.move_line_start()),
                         (End, _) => self.queue(self.state.move_line_end()),
-                        (PageUp, _) => self.queue(self.state.move_up(self.state.viewport_height() as usize - 1)),
-                        (PageDown, _) =>  self.queue(self.state.move_down(self.state.viewport_height() as usize - 1)),
+                        (PageUp, _) => self.queue(self.state.move_up(self.state.viewport.height as usize - 1)),
+                        (PageDown, _) =>  self.queue(self.state.move_down(self.state.viewport.height as usize - 1)),
                         _ => {}
                     }
                 },
@@ -73,7 +75,7 @@ impl Editor {
                     use MouseButton::*;
 
                     match kind {
-                        MouseEventKind::Down(Left) => self.queue(self.state.click(column + 1, row + 1)),
+                        MouseEventKind::Down(Left) => self.queue(self.state.click(self.state.viewport.to_absolute((column + 1, row + 1)))),
                         MouseEventKind::ScrollDown => self.queue(self.state.scroll_down(1)),
                         MouseEventKind::ScrollUp => self.queue(self.state.scroll_up(1)),
                         _ => {}
@@ -89,7 +91,7 @@ impl Editor {
 
     fn queue(&mut self, (scroll_cmd, cursor_cmd): NavigationCommand) {
         if let ScrollCommand::ScrollTo(x, y) = scroll_cmd {
-            self.state.scroll_pos = (x, y);
+            self.state.scroll_viewport(x, y);
             self.renderer.refresh(&self.state);
         }
         if let CursorCommand::MoveTo(x, y) = cursor_cmd {
@@ -98,8 +100,8 @@ impl Editor {
         }
     }
 
-    fn resize(&mut self, terminal_size: Coordinates) {
-        self.state.viewport_size = (terminal_size.0, terminal_size.1 - 1);
+    fn resize(&mut self, (width, height): ViewportDimensions) {
+        self.state.resize_viewport(width, height);
         self.renderer.refresh(&self.state)
     }
 }

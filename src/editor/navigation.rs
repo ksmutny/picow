@@ -3,7 +3,7 @@ mod tuple_ops;
 
 use std::cmp::min;
 
-use super::state::{CursorPosition, EditorState, AbsPosition};
+use super::state::{AbsPosition, EditorState, Viewport};
 use CursorCommand::*;
 use ScrollCommand::*;
 
@@ -38,24 +38,15 @@ impl EditorState {
     }
 
     fn scroll_into_view(&self, (x, y): AbsPosition) -> AbsPosition {
-        let (scroll_left, scroll_top) = self.scroll_pos;
-        let (width, height) = self.viewport_usize();
+        let Viewport { left, top, width, height } = self.viewport;
 
         let scroll_into = |cursor_pos, viewport_start, viewport_size| {
             if cursor_pos < viewport_start { cursor_pos }
-            else if cursor_pos >= viewport_start + viewport_size { cursor_pos - viewport_size + 1 }
+            else if cursor_pos >= viewport_start + viewport_size as usize { cursor_pos - viewport_size as usize + 1 }
             else { viewport_start }
         };
 
-        (scroll_into(x, scroll_left, width), scroll_into(y, scroll_top, height))
-    }
-
-    fn to_relative((x_abs, y_abs): AbsPosition, (scroll_left, scroll_top): AbsPosition) -> CursorPosition {
-        ((x_abs - scroll_left + 1) as u16, (y_abs - scroll_top + 1) as u16)
-    }
-
-    fn to_absolute((x, y): CursorPosition, (scroll_left, scroll_top): AbsPosition) -> AbsPosition {
-        (x as usize + scroll_left - 1, y as usize + scroll_top - 1)
+        (scroll_into(x, left, width), scroll_into(y, top, height))
     }
 
     fn move_cmd(&self, new_pos @ (x, y): AbsPosition) -> CursorCommand {
@@ -63,11 +54,11 @@ impl EditorState {
     }
 
     fn scroll_cmd(&self, new_pos @ (x, y): AbsPosition) -> ScrollCommand {
-        if new_pos == self.scroll_pos { NoScroll } else { ScrollTo(x, y) }
+        if new_pos == self.viewport.pos() { NoScroll } else { ScrollTo(x, y) }
     }
 
-    pub fn click(&self, x: u16, y: u16) -> NavigationCommand {
-        self.move_to(Self::to_absolute((x, y), self.scroll_pos))
+    pub fn click(&self, new_pos: AbsPosition) -> NavigationCommand {
+        self.move_to(new_pos)
     }
 
     pub fn move_up(&self, n: usize) -> NavigationCommand {
@@ -153,7 +144,7 @@ impl EditorState {
     where
         F: Fn(usize) -> usize,
     {
-        let (x, y) = self.scroll_pos;
-        self.scroll_to((x, new(y)))
+        let Viewport { left, top, .. } = self.viewport;
+        self.scroll_to((left, new(top)))
     }
 }

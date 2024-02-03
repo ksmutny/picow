@@ -1,6 +1,6 @@
 use picow::editor::{
     navigation::{CursorCommand::{self, *}, ScrollCommand::{self, *}},
-    state::{EditorState, AbsPosition, ViewportDimensions}
+    state::{AbsPosition, EditorState, Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {
@@ -84,8 +84,10 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         expected_cursor = None;
     }
 
+    let (left, top) = scroll_pos;
+    let (width, height) = viewport_size;
     TestCase {
-        editor_state: EditorState::new(lines, viewport_size, scroll_pos, cursor_pos),
+        editor_state: EditorState::new(lines, Viewport::new(left, top, width, height), cursor_pos),
         expected_cursor: expected_cursor.map(|pos| MoveTo(pos.0, pos.1)).unwrap_or(NoMove),
         expected_scroll: expected_scroll.map(|pos| ScrollTo(pos.0, pos.1)).unwrap_or(NoScroll),
     }
@@ -106,9 +108,9 @@ fn move_cursor_no_scroll() {
     ]);
 
     let state = tc.editor_state;
-    assert_eq!(state.viewport_size, (13, 4));
+    assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor_pos, (6, 1));
-    assert_eq!(state.scroll_pos, (0, 0));
+    assert_eq!(state.viewport.pos(), (0, 0));
     assert_eq!(state.lines, vec![
         "______ ______",
         " ______",
@@ -163,9 +165,9 @@ fn move_cursor_and_scroll() {
     ]);
 
     let state = tc.editor_state;
-    assert_eq!(state.viewport_size, (13, 4));
+    assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor_pos, (16, 3));
-    assert_eq!(state.scroll_pos, (10, 2));
+    assert_eq!(state.viewport.pos(), (10, 2));
     assert_eq!(state.lines, vec![
         "_________ ______ ___",
         "_________ __________________",
@@ -191,9 +193,9 @@ fn document_start() {
     ]);
 
     let state = tc.editor_state;
-    assert_eq!(state.viewport_size, (13, 4));
+    assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor_pos, (8, 3));
-    assert_eq!(state.scroll_pos, (1, 1));
+    assert_eq!(state.viewport.pos(), (1, 1));
     assert_eq!(state.lines, vec![
         " _____________",
         "______________",

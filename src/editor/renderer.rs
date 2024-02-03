@@ -1,8 +1,8 @@
 use std::{io, cmp::min};
 
-use crate::terminal;
+use crate::terminal::{self, commands::Command, CommandBuffer, CommandExecutor};
+use super::state::{EditorState, Viewport};
 
-use super::{commands::Command, state::{AbsPosition, EditorState, ViewportDimensions}, CommandBuffer, CommandExecutor};
 
 pub struct EditorRenderer {
     commands: CommandBuffer,
@@ -20,6 +20,11 @@ impl EditorRenderer {
     pub fn open() -> io::Result<()> {
         terminal::init()?;
         Command::EnterAlternateScreen.execute()
+    }
+
+    pub fn create_viewport() -> io::Result<Viewport> {
+        let (width, height) = terminal::terminal_size()?;
+        Ok(Viewport::new(0, 0, width, height))
     }
 
     pub fn close() -> io::Result<()> {
@@ -41,18 +46,18 @@ impl EditorRenderer {
     }
 
     fn visible_lines<'a>(&self, state: &'a EditorState) -> &'a [String] {
-        let top = state.scroll_top();
-        let height = state.viewport_height() as usize;
+        let top = state.viewport.top;
+        let height = state.viewport.height as usize;
         let bottom = min(top + height, state.lines.len());
 
         &state.lines[top..bottom]
     }
 
     fn visible_part<'a>(&self, line: &'a str, state: &EditorState) -> &'a str {
-        let start = state.scroll_left();
+        let start = state.viewport.left;
         if line.len() <= start { return "" }
 
-        let width = state.viewport_width() as usize;
+        let width = state.viewport.width as usize;
         let len = min(line.len() - start, width);
 
         &line[start..start + len]
@@ -60,49 +65,36 @@ impl EditorRenderer {
 
     pub fn refresh_cursor(&mut self, state: &EditorState) {
         let (x_abs, y_abs) = state.cursor_pos;
-        let (scroll_left, scroll_top) = state.scroll_pos;
 
-        if self.cursor_out_of_view((x_abs, y_abs), (scroll_left, scroll_top), state.viewport_size) {
+        if !state.viewport.cursor_within(state.cursor_pos) && !self.cursor_hidden {
             self.hide_cursor()
         } else if self.cursor_hidden {
             self.show_cursor()
         }
 
         if !self.cursor_hidden {
-            let (x, y) = ((x_abs - scroll_left + 1) as u16, (y_abs - scroll_top + 1) as u16);
+            let (x, y) = state.viewport.to_relative((x_abs, y_abs));
             self.commands.queue(Command::MoveTo(x, y))
         }
     }
 
-    fn cursor_out_of_view(&self,
-        (x, y): AbsPosition,
-        (scroll_left, scroll_top): AbsPosition,
-        (width, height): ViewportDimensions
-    ) -> bool {
-        (x < scroll_left || x >= scroll_left + width as usize) || (y < scroll_top || y >= scroll_top + height as usize)
-    }
-
     fn show_cursor(&mut self) {
-        if self.cursor_hidden {
-            self.commands.queue(Command::ShowCursor);
-            self.cursor_hidden = false;
-        }
+        self.commands.queue(Command::ShowCursor);
+        self.cursor_hidden = false;
     }
 
     fn hide_cursor(&mut self) {
-        if !self.cursor_hidden {
-            self.commands.queue(Command::HideCursor);
-            self.cursor_hidden = true;
-        }
+        self.commands.queue(Command::HideCursor);
+        self.cursor_hidden = true;
     }
 
     pub fn refresh_status_bar(&mut self, state: &EditorState, delimiter: &str) {
-        let (width, height) = state.viewport_size;
+        let Viewport { top, width, height, .. } = state.viewport;
         let (x, y) = state.cursor_pos;
 
-        let status = format!("{}x{} | {} {} | {} | {}", width, height, x + 1, y + 1, state.scroll_top() + 1, self.delimiter_label(delimiter));
+        let status = format!("{}x{} | {} {} | {} | {}", width, height, x + 1, y + 1, top + 1, self.delimiter_label(delimiter));
 
-        self.commands.queue(Command::MoveTo(1, state.viewport_height() + 1));
+        self.commands.queue(Command::MoveTo(1, state.viewport.height + 1));
         self.commands.queue(Command::ClearLine);
         self.commands.queue(Command::Print(status));
         self.refresh_cursor(state);
