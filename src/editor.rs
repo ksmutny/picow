@@ -75,7 +75,7 @@ impl Editor {
                     use MouseButton::*;
 
                     match kind {
-                        MouseEventKind::Down(Left) => self.queue(self.state.click(self.state.viewport.to_absolute((column + 1, row + 1)))),
+                        MouseEventKind::Down(Left) => self.queue(self.state.move_to(self.state.viewport.to_absolute((column + 1, row + 1)))),
                         MouseEventKind::ScrollDown => self.queue(self.state.scroll_down(1)),
                         MouseEventKind::ScrollUp => self.queue(self.state.scroll_up(1)),
                         _ => {}

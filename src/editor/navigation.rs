@@ -13,7 +13,7 @@ pub type NavigationCommand = (Option<ScrollViewportTo>, Option<MoveCursorTo>);
 
 impl EditorState {
 
-    fn move_to(&self, pos: AbsPosition) -> NavigationCommand {
+    pub fn move_to(&self, pos: AbsPosition) -> NavigationCommand {
         let new_cursor_pos = self.within_text(pos);
         let new_scroll_pos = self.scroll_into_view(new_cursor_pos);
 
@@ -44,10 +44,6 @@ impl EditorState {
 
     fn scroll_cmd(&self, new_pos @ (x, y): AbsPosition) -> Option<ScrollViewportTo> {
         if new_pos == self.viewport.pos() { None } else { Some(ScrollViewportTo(x, y)) }
-    }
-
-    pub fn click(&self, new_pos: AbsPosition) -> NavigationCommand {
-        self.move_to(new_pos)
     }
 
     pub fn move_up(&self, n: usize) -> NavigationCommand {
