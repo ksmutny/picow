@@ -1,7 +1,7 @@
 use std::io::{self, Error};
 
 use winapi::um::{
-    consoleapi::{GetConsoleMode, SetConsoleMode},
+    consoleapi::SetConsoleMode,
     handleapi::INVALID_HANDLE_VALUE,
     processenv::GetStdHandle,
     winbase::{STD_INPUT_HANDLE, STD_OUTPUT_HANDLE},
@@ -16,14 +16,6 @@ const CONSOLE_MODE: u32 =
 pub fn init_console() -> io::Result<()> {
     let handle = get_std_in_handle()?;
     set_console_mode(handle, CONSOLE_MODE)
-}
-
-pub fn get_console_mode(handle: HANDLE) -> io::Result<u32> {
-    unsafe {
-        let mut mode: u32 = 0;
-        let res = GetConsoleMode(handle, &mut mode);
-        result(res, 0, mode)
-    }
 }
 
 pub fn set_console_mode(handle: HANDLE, mode: u32) -> io::Result<()> {

@@ -1,6 +1,3 @@
-#[path="./tuple_ops.rs"]
-mod tuple_ops;
-
 use std::cmp::min;
 
 use super::state::{AbsPosition, EditorState, Viewport};
