@@ -7,7 +7,7 @@ use std::io;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
 use self::{
-    navigation::{CursorCommand, NavigationCommand, ScrollCommand},
+    navigation::{MoveCursorTo, NavigationCommand, ScrollViewportTo},
     renderer::EditorRenderer,
     state::{EditorState, ViewportDimensions}
 };
@@ -90,11 +90,11 @@ impl Editor {
     }
 
     fn queue(&mut self, (scroll_cmd, cursor_cmd): NavigationCommand) {
-        if let ScrollCommand::ScrollTo(x, y) = scroll_cmd {
-            self.state.scroll_viewport(x, y);
+        if let Some(ScrollViewportTo(left, top)) = scroll_cmd {
+            self.state.scroll_viewport(left, top);
             self.renderer.refresh(&self.state);
         }
-        if let CursorCommand::MoveTo(x, y) = cursor_cmd {
+        if let Some(MoveCursorTo(x, y)) = cursor_cmd {
             self.state.cursor_pos = (x, y);
             self.renderer.refresh_cursor(&self.state);
         }

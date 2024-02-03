@@ -1,23 +1,15 @@
 use std::cmp::min;
 
 use super::state::{AbsPosition, EditorState, Viewport};
-use CursorCommand::*;
-use ScrollCommand::*;
 
 
 #[derive(PartialEq, Debug)]
-pub enum CursorCommand {
-    NoMove,
-    MoveTo(usize, usize)
-}
+pub struct MoveCursorTo(pub usize, pub usize);
 
 #[derive(PartialEq, Debug)]
-pub enum ScrollCommand {
-    NoScroll,
-    ScrollTo(usize, usize)
-}
+pub struct ScrollViewportTo(pub usize, pub usize);
 
-pub type NavigationCommand = (ScrollCommand, CursorCommand);
+pub type NavigationCommand = (Option<ScrollViewportTo>, Option<MoveCursorTo>);
 
 impl EditorState {
 
@@ -46,12 +38,12 @@ impl EditorState {
         (scroll_into(x, left, width), scroll_into(y, top, height))
     }
 
-    fn move_cmd(&self, new_pos @ (x, y): AbsPosition) -> CursorCommand {
-        if new_pos == self.cursor_pos { NoMove } else { MoveTo(x, y) }
+    fn move_cmd(&self, new_pos @ (x, y): AbsPosition) -> Option<MoveCursorTo> {
+        if new_pos == self.cursor_pos { None } else { Some(MoveCursorTo(x, y)) }
     }
 
-    fn scroll_cmd(&self, new_pos @ (x, y): AbsPosition) -> ScrollCommand {
-        if new_pos == self.viewport.pos() { NoScroll } else { ScrollTo(x, y) }
+    fn scroll_cmd(&self, new_pos @ (x, y): AbsPosition) -> Option<ScrollViewportTo> {
+        if new_pos == self.viewport.pos() { None } else { Some(ScrollViewportTo(x, y)) }
     }
 
     pub fn click(&self, new_pos: AbsPosition) -> NavigationCommand {
@@ -126,7 +118,7 @@ impl EditorState {
 
     pub fn scroll_to(&self, (scroll_left, scroll_top): AbsPosition) -> NavigationCommand {
         let new_scroll_top = min(scroll_top, self.last_line_y());
-        (self.scroll_cmd((scroll_left, new_scroll_top)), NoMove)
+        (self.scroll_cmd((scroll_left, new_scroll_top)), None)
     }
 
     pub fn scroll_up(&self, n: usize) -> NavigationCommand {

@@ -1,12 +1,12 @@
 use picow::editor::{
-    navigation::{CursorCommand::{self, *}, ScrollCommand::{self, *}},
+    navigation::{MoveCursorTo, ScrollViewportTo},
     state::{AbsPosition, EditorState, Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {
     pub editor_state: EditorState,
-    pub expected_cursor: CursorCommand,
-    pub expected_scroll: ScrollCommand,
+    pub expected_cursor: Option<MoveCursorTo>,
+    pub expected_scroll: Option<ScrollViewportTo>,
 }
 
 pub fn parse_test_case(input: Vec<&str>) -> TestCase {
@@ -88,8 +88,8 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let (width, height) = viewport_size;
     TestCase {
         editor_state: EditorState::new(lines, Viewport::new(left, top, width, height), cursor_pos),
-        expected_cursor: expected_cursor.map(|pos| MoveTo(pos.0, pos.1)).unwrap_or(NoMove),
-        expected_scroll: expected_scroll.map(|pos| ScrollTo(pos.0, pos.1)).unwrap_or(NoScroll),
+        expected_cursor: expected_cursor.map(|pos| MoveCursorTo(pos.0, pos.1)),
+        expected_scroll: expected_scroll.map(|pos| ScrollViewportTo(pos.0, pos.1))
     }
 }
 
@@ -118,8 +118,8 @@ fn move_cursor_no_scroll() {
         "_____________"
     ]);
 
-    assert_eq!(tc.expected_cursor, MoveTo(6, 0));
-    assert_eq!(tc.expected_scroll, NoScroll);
+    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(6, 0)));
+    assert_eq!(tc.expected_scroll, None);
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn no_move_cursor() {
 
     let state = tc.editor_state;
     assert_eq!(state.cursor_pos, (6, 1));
-    assert_eq!(tc.expected_cursor, NoMove);
+    assert_eq!(tc.expected_cursor, None);
 }
 
 #[test]
@@ -177,8 +177,8 @@ fn move_cursor_and_scroll() {
         "_________ _____________"  // 4
     ]);
 
-    assert_eq!(tc.expected_cursor, MoveTo(16, 0));
-    assert_eq!(tc.expected_scroll, ScrollTo(10, 0));
+    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(16, 0)));
+    assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(10, 0)));
 }
 
 #[test]
@@ -204,8 +204,8 @@ fn document_start() {
         "______________"
     ]);
 
-    assert_eq!(tc.expected_cursor, MoveTo(0, 0));
-    assert_eq!(tc.expected_scroll, ScrollTo(0, 0));
+    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(0, 0)));
+    assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(0, 0)));
 }
 
 #[test]
