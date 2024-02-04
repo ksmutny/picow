@@ -1,4 +1,5 @@
 pub mod state;
+pub mod editing;
 pub mod navigation;
 pub mod renderer;
 
@@ -53,7 +54,10 @@ impl Editor {
                     match (code, modifiers) {
                         (Esc, _) => break Ok(()),
 
-                        // (Char(c), _) => self.commands.queue(Command::Print(c.to_string())),
+                        (Char(c), _) => self.insert_char(c),
+                        (Enter, _) => self.insert_char('\n'),
+                        (Backspace, _) => self.backspace(),
+                        (Delete, _) => self.delete_char(),
 
                         (Up, CTRL) => self.queue(self.state.scroll_up(1)),
                         (Down, CTRL) => self.queue(self.state.scroll_down(1)),
@@ -102,5 +106,23 @@ impl Editor {
     fn resize(&mut self, (width, height): ViewportDimensions) {
         self.state.resize_viewport(width, height);
         self.renderer.refresh(&self.state)
+    }
+
+    fn insert_char(&mut self, c: char) {
+        self.state.insert_char(self.state.cursor_pos, c);
+
+        self.queue(self.state.move_right());
+        self.renderer.refresh(&self.state);
+    }
+
+    fn delete_char(&mut self) {
+        self.state.delete_char(self.state.cursor_pos);
+        self.renderer.refresh(&self.state);
+    }
+
+    fn backspace(&mut self) {
+        if self.state.cursor_pos == (0, 0) { return }
+        self.queue(self.state.move_left());
+        self.delete_char();
     }
 }
