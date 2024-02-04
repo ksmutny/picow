@@ -31,7 +31,7 @@ impl Editor {
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        EditorRenderer::open()?;
+        EditorRenderer::open("editor.rs".to_string())?;
         self.renderer.refresh(&self.state);
         self.renderer.refresh_cursor(&self.state);
 

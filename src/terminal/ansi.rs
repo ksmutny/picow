@@ -6,6 +6,12 @@ macro_rules! csi {
     }};
 }
 
+macro_rules! osc {
+    ($($arg:tt)*) => {{
+        format!("\x1b]{}\x1b\x5c", format!($($arg)*))
+    }};
+}
+
 pub fn ansi(command: &Command) -> String {
     match command {
         Clear => csi!("2J{}", ansi(&MoveTo(1, 1))),
@@ -22,5 +28,7 @@ pub fn ansi(command: &Command) -> String {
 
         EnterAlternateScreen => csi!("?1049h{}", ansi(&MoveTo(1  , 1))),
         LeaveAlternateScreen => csi!("?1049l"),
+
+        SetWindowTitle(title) => osc!("0;{}", title),
     }
 }

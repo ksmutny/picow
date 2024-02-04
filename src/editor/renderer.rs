@@ -17,9 +17,10 @@ impl EditorRenderer {
         }
     }
 
-    pub fn open() -> io::Result<()> {
+    pub fn open(file_name: String) -> io::Result<()> {
         terminal::init()?;
-        Command::EnterAlternateScreen.execute()
+        Command::EnterAlternateScreen.execute()?;
+        Command::SetWindowTitle(file_name).execute()
     }
 
     pub fn create_viewport() -> io::Result<Viewport> {

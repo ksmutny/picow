@@ -13,4 +13,6 @@ pub enum Command {
 
     EnterAlternateScreen,
     LeaveAlternateScreen,
+
+    SetWindowTitle(String),
 }
