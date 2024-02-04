@@ -18,8 +18,8 @@ pub struct Viewport {
 }
 
 impl Viewport {
-    pub fn new(x: usize, y: usize, width: u16, height: u16) -> Self {
-        Self { left: x, top: y, width, height }
+    pub fn new(left: usize, top: usize, width: u16, height: u16) -> Self {
+        Self { left, top, width, height }
     }
 
     pub fn pos(&self) -> AbsPosition { (self.left, self.top) }
@@ -58,7 +58,7 @@ impl EditorState {
 
     pub fn resize_viewport(&mut self, width: u16, height: u16) {
         self.viewport.width = width;
-        self.viewport.height = height;
+        self.viewport.height = height - 1;
     }
 
     pub fn cursor_x(&self) -> usize { self.cursor_pos.0 }
