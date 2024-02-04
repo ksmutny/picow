@@ -46,11 +46,6 @@ impl Editor {
                     use KeyCode::*;
                     const CTRL: KeyModifiers = KeyModifiers::CONTROL;
 
-                    match code {
-                        Up | Down | PageUp | PageDown => self.state.keep_vertical_navigation(),
-                        _ => self.state.end_vertical_navigation(),
-                    }
-
                     match (code, modifiers) {
                         (Esc, _) => break Ok(()),
 
@@ -79,7 +74,7 @@ impl Editor {
                     use MouseButton::*;
 
                     match kind {
-                        MouseEventKind::Down(Left) => self.queue(self.state.move_to(self.state.viewport.to_absolute((column + 1, row + 1)))),
+                        MouseEventKind::Down(Left) => self.queue(self.state.click(self.state.viewport.to_absolute((column + 1, row + 1)))),
                         MouseEventKind::ScrollDown => self.queue(self.state.scroll_down(1)),
                         MouseEventKind::ScrollUp => self.queue(self.state.scroll_up(1)),
                         _ => {}
@@ -98,7 +93,13 @@ impl Editor {
             self.state.scroll_viewport(left, top);
             self.renderer.refresh(&self.state);
         }
-        if let Some(MoveCursorTo(x, y)) = cursor_cmd {
+        if let Some(MoveCursorTo(x, y, is_vertical)) = cursor_cmd {
+            if is_vertical {
+                self.state.start_or_keep_vertical_navigation()
+            }
+            else {
+                self.state.end_vertical_navigation()
+            }
             self.state.cursor_pos = (x, y);
         }
     }

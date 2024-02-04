@@ -4,7 +4,7 @@ use super::state::{AbsPosition, EditorState, Viewport};
 
 
 #[derive(PartialEq, Debug)]
-pub struct MoveCursorTo(pub usize, pub usize);
+pub struct MoveCursorTo(pub usize, pub usize, pub bool);
 
 #[derive(PartialEq, Debug)]
 pub struct ScrollViewportTo(pub usize, pub usize);
@@ -13,16 +13,16 @@ pub type NavigationCommand = (Option<ScrollViewportTo>, Option<MoveCursorTo>);
 
 impl EditorState {
 
-    pub fn move_to(&self, pos: AbsPosition) -> NavigationCommand {
-        let new_cursor_pos = self.within_text(pos);
+    fn move_to(&self, pos: AbsPosition, is_vertical: bool) -> NavigationCommand {
+        let new_cursor_pos = self.within_text(pos, is_vertical);
         let new_scroll_pos = self.scroll_into_view(new_cursor_pos);
 
-        (self.scroll_cmd(new_scroll_pos), self.move_cmd(new_cursor_pos))
+        (self.scroll_cmd(new_scroll_pos), self.move_cmd(new_cursor_pos, is_vertical))
     }
 
-    fn within_text(&self, (x, y): AbsPosition) -> AbsPosition {
+    fn within_text(&self, (x, y): AbsPosition, is_vertical: bool) -> AbsPosition {
         let new_y = min(y, self.last_line_y());
-        let new_x = min(self.vertical_navigation_x_or(x), self.line_len(new_y));
+        let new_x = min(if is_vertical { self.vertical_navigation_x() } else { x }, self.line_len(new_y));
         (new_x, new_y)
     }
 
@@ -38,8 +38,8 @@ impl EditorState {
         (scroll_into(x, left, width), scroll_into(y, top, height))
     }
 
-    fn move_cmd(&self, new_pos @ (x, y): AbsPosition) -> Option<MoveCursorTo> {
-        if new_pos == self.cursor_pos { None } else { Some(MoveCursorTo(x, y)) }
+    fn move_cmd(&self, new_pos @ (x, y): AbsPosition, is_vertical: bool) -> Option<MoveCursorTo> {
+        if new_pos == self.cursor_pos { None } else { Some(MoveCursorTo(x, y, is_vertical)) }
     }
 
     fn scroll_cmd(&self, new_pos @ (x, y): AbsPosition) -> Option<ScrollViewportTo> {
@@ -59,7 +59,7 @@ impl EditorState {
         F: Fn(usize) -> usize,
     {
         let (x, y) = self.cursor_pos;
-        self.move_to((x, new(y)))
+        self.move_to((x, new(y)), true)
     }
 
     pub fn move_left(&self) -> NavigationCommand {
@@ -68,7 +68,7 @@ impl EditorState {
             (0, y) => self.line_end(y - 1),
             (x, y) => (x - 1, y)
         };
-        self.move_to(move_to)
+        self.move_to(move_to, false)
     }
 
     pub fn move_right(&self) -> NavigationCommand {
@@ -77,23 +77,27 @@ impl EditorState {
             (_, y) if y < self.last_line_y() => (0, y + 1),
             _ => self.cursor_pos
         };
-        self.move_to(move_to)
+        self.move_to(move_to, false)
     }
 
     pub fn move_line_start(&self) -> NavigationCommand {
-        self.move_to((0, self.cursor_y()))
+        self.move_to((0, self.cursor_y()), false)
     }
 
     pub fn move_line_end(&self) -> NavigationCommand {
-        self.move_to(self.line_end(self.cursor_y()))
+        self.move_to(self.line_end(self.cursor_y()), false)
     }
 
     pub fn move_document_start(&self) -> NavigationCommand {
-        self.move_to((0, 0))
+        self.move_to((0, 0), false)
     }
 
     pub fn move_document_end(&self) -> NavigationCommand {
-        self.move_to(self.last_line_end())
+        self.move_to(self.last_line_end(), false)
+    }
+
+    pub fn click(&self, new_pos: AbsPosition) -> NavigationCommand {
+        self.move_to(new_pos, false)
     }
 
     fn line_end(&self, y: usize) -> AbsPosition {
