@@ -50,8 +50,16 @@ impl EditorState {
         self.move_vertical(|y| y - min(n, y))
     }
 
+    pub fn move_page_up(&self) -> NavigationCommand {
+        self.move_up(self.viewport.height as usize - 1)
+    }
+
     pub fn move_down(&self, n: usize) -> NavigationCommand {
         self.move_vertical(|y| y + min(n, self.last_line_y() - y))
+    }
+
+    pub fn move_page_down(&self) -> NavigationCommand {
+        self.move_down(self.viewport.height as usize - 1)
     }
 
     fn move_vertical<F>(&self, new: F) -> NavigationCommand

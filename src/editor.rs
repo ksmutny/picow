@@ -65,8 +65,8 @@ impl Editor {
                         (Down, _) => self.queue(self.state.move_down(1)),
                         (Home, _) => self.queue(self.state.move_line_start()),
                         (End, _) => self.queue(self.state.move_line_end()),
-                        (PageUp, _) => self.queue(self.state.move_up(self.state.viewport.height as usize - 1)),
-                        (PageDown, _) =>  self.queue(self.state.move_down(self.state.viewport.height as usize - 1)),
+                        (PageUp, _) => self.queue(self.state.move_page_up()),
+                        (PageDown, _) =>  self.queue(self.state.move_page_down()),
                         _ => {}
                     }
                 },
