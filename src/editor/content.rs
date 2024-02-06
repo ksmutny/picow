@@ -1,6 +1,8 @@
-use crate::file::detect_line_delimiter;
-
 use super::state::AbsPosition;
+
+pub const CRLF: &str = "\r\n";
+pub const LF: &str = "\n";
+pub const CR: &str = "\r";
 
 pub struct EditorContent {
     pub lines: Vec<String>,
@@ -18,9 +20,16 @@ impl EditorContent {
     }
 
     fn split(content: &str) -> (Vec<String>, String) {
-        let delimiter = detect_line_delimiter(content);
-        let lines = content.split(&delimiter).map(String::from).collect();
-        (lines, delimiter)
+        let delimiter = Self::detect_line_delimiter(content);
+        let lines = content.split(delimiter).map(String::from).collect();
+        (lines, delimiter.to_string())
+    }
+
+    fn detect_line_delimiter(file_content: &str) -> &str {
+        if file_content.contains(CRLF) { CRLF }
+        else if file_content.contains(LF) { LF }
+        else if file_content.contains(CR) { CR }
+        else { LF }
     }
 
     pub fn insert(&mut self, (row, col): AbsPosition, str: &str) -> AbsPosition {

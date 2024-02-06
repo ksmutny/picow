@@ -104,7 +104,7 @@ impl EditorRenderer {
     }
 
     fn delimiter_label(&self, delimiter: &str) -> &str {
-        use crate::file::{CRLF, CR, LF};
+        use super::content::{CRLF, CR, LF};
 
         match delimiter {
             CRLF => "CRLF",
