@@ -1,7 +1,9 @@
-use picow::editor;
-use picow::file;
+use std::fs;
+
+use picow::editor::{content::EditorContent, Editor};
 
 fn main() -> std::io::Result<()> {
-    let (lines, delimiter) = file::read_file("src/editor.rs")?;
-    editor::Editor::new(lines, delimiter).run()
+    let file_content = fs::read_to_string("src/editor.rs")?;
+    let content = EditorContent::parse(&file_content);
+    Editor::new(content).run()
 }

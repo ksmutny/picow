@@ -12,7 +12,7 @@ pub const CRLF: &str = "\r\n";
 pub const LF: &str = "\n";
 pub const CR: &str = "\r";
 
-fn detect_line_delimiter(file_content: &str) -> String {
+pub fn detect_line_delimiter(file_content: &str) -> String {
     let delimiter = if file_content.contains(CRLF) {
         CRLF
     } else if file_content.contains(LF) {

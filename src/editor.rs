@@ -1,5 +1,5 @@
+pub mod content;
 pub mod state;
-pub mod editing;
 pub mod navigation;
 pub mod renderer;
 
@@ -8,7 +8,7 @@ use std::io;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
 use self::{
-    navigation::{MoveCursorTo, NavigationCommand, ScrollViewportTo},
+    content::EditorContent, navigation::{MoveCursorTo, NavigationCommand, ScrollViewportTo},
     renderer::EditorRenderer,
     state::{EditorState, ViewportDimensions}
 };
@@ -17,16 +17,14 @@ use self::{
 pub struct Editor {
     state: EditorState,
     renderer: EditorRenderer,
-    delimiter: String,
 }
 
 impl Editor {
-    pub fn new(rows: Vec<String>, delimiter: String) -> Self {
+    pub fn new(content: EditorContent) -> Self {
         let viewport = EditorRenderer::create_viewport().unwrap();
         Self {
-            state: EditorState::new(rows, viewport, (0, 0)),
-            renderer: EditorRenderer::new(),
-            delimiter,
+            state: EditorState::new(content, viewport, (0, 0)),
+            renderer: EditorRenderer::new()
         }
     }
 
@@ -83,7 +81,7 @@ impl Editor {
                 Event::Resize(width, height) => self.resize((width, height)),
                 _ => {}
             }
-            self.renderer.refresh_status_bar(&self.state, &self.delimiter);
+            self.renderer.refresh_status_bar(&self.state);
             self.renderer.flush()?;
         }
     }
@@ -110,15 +108,19 @@ impl Editor {
     }
 
     fn insert_char(&mut self, c: char) {
-        self.state.insert_char(self.state.cursor_pos, c);
+        let (col, row) = self.state.cursor_pos;
+        self.state.content.insert((row, col), &c.to_string());
 
         self.queue(self.state.move_right());
         self.renderer.refresh(&self.state);
     }
 
     fn delete_char(&mut self) {
-        self.state.delete_char(self.state.cursor_pos);
-        self.renderer.refresh(&self.state);
+        if let (_, Some(MoveCursorTo(right_col, right_row, _))) = self.state.move_right() {
+            let (left_col, left_row) = self.state.cursor_pos;
+            self.state.content.delete((left_row, left_col), (right_row, right_col));
+            self.renderer.refresh(&self.state);
+        }
     }
 
     fn backspace(&mut self) {

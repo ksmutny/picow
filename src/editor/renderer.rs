@@ -49,9 +49,9 @@ impl EditorRenderer {
     fn visible_lines<'a>(&self, state: &'a EditorState) -> &'a [String] {
         let top = state.viewport.top;
         let height = state.viewport.height as usize;
-        let bottom = min(top + height, state.lines.len());
+        let bottom = min(top + height, state.content.lines.len());
 
-        &state.lines[top..bottom]
+        &state.content.lines[top..bottom]
     }
 
     fn visible_part<'a>(&self, line: &'a str, state: &EditorState) -> &'a str {
@@ -91,11 +91,11 @@ impl EditorRenderer {
         self.cursor_hidden = true;
     }
 
-    pub fn refresh_status_bar(&mut self, state: &EditorState, delimiter: &str) {
+    pub fn refresh_status_bar(&mut self, state: &EditorState) {
         let Viewport { top, width, height, .. } = state.viewport;
         let (x, y) = state.cursor_pos;
 
-        let status = format!("{}x{} | {} {} | {} | {}", width, height, x + 1, y + 1, top + 1, self.delimiter_label(delimiter));
+        let status = format!("{}x{} | {} {} | {} | {}", width, height, x + 1, y + 1, top + 1, self.delimiter_label(&state.content.delimiter));
 
         self.commands.queue(Command::MoveTo(1, state.viewport.height + 1));
         self.commands.queue(Command::ClearLine);

@@ -113,7 +113,7 @@ impl EditorState {
     }
 
     fn line_len(&self, y: usize) -> usize {
-        self.lines[y].len()
+        self.content.lines[y].len()
     }
 
     fn last_line_end(&self) -> AbsPosition {
@@ -121,7 +121,7 @@ impl EditorState {
     }
 
     fn last_line_y(&self) -> usize {
-        self.lines.len() - 1
+        self.content.lines.len() - 1
     }
 
     pub fn scroll_to(&self, (scroll_left, scroll_top): AbsPosition) -> NavigationCommand {

@@ -1,6 +1,5 @@
 use picow::editor::{
-    navigation::{MoveCursorTo, ScrollViewportTo},
-    state::{AbsPosition, EditorState, Viewport, ViewportDimensions}
+    content::EditorContent, navigation::{MoveCursorTo, ScrollViewportTo}, state::{AbsPosition, EditorState, Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {
@@ -18,6 +17,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let mut scroll_pos: AbsPosition = (0, 0);
     let mut scroll_pos_identified = false;
     let mut expected_cursor = None;
+    let mut expected_cursor_vertical = false;
     let mut expected_scroll = None;
 
     for (i, line) in input.iter().enumerate() {
@@ -52,10 +52,11 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             expected_scroll = Some((exp_scroll_left, exp_scroll_top));
         }
 
-        if line.contains('▯') {
-            let exp_cursor_x_abs = pos(line, '▯');
+        if line.contains('▯') || line.contains('△') {
+            let exp_cursor_x_abs = if line.contains('▯') { pos(line, '▯') } else { pos(line, '△') };
             let exp_cursor_y_abs = i;
             expected_cursor = Some((exp_cursor_x_abs, exp_cursor_y_abs));
+            expected_cursor_vertical = line.contains('△');
 
             if expected_scroll == None && !scroll_pos_identified {
                 expected_scroll = Some((exp_cursor_x_abs, exp_cursor_y_abs));
@@ -69,7 +70,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         if !eof_reached {
             let processed_line = line
                 .replace(['▮', '┘'], if line.contains('.') || line.contains('☼') { " " } else { "_" } )
-                .replace(['│', '▯'], " ")
+                .replace(['│', '▯', '△'], " ")
                 .replace(['┌', '─', '┐', '└', '╔', '▮', '.', '☼'], "_")
                 .trim_end()
                 .to_string();
@@ -87,9 +88,13 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let (left, top) = scroll_pos;
     let (width, height) = viewport_size;
     TestCase {
-        editor_state: EditorState::new(lines, Viewport::new(left, top, width, height), cursor_pos),
-        expected_cursor: expected_cursor.map(|pos| MoveCursorTo(pos.0, pos.1)),
-        expected_scroll: expected_scroll.map(|pos| ScrollViewportTo(pos.0, pos.1))
+        editor_state: EditorState::new(
+            EditorContent::new(lines, "\n".to_string()),
+            Viewport::new(left, top, width, height),
+            cursor_pos
+        ),
+        expected_cursor: expected_cursor.map(|(x, y)| MoveCursorTo(x, y, expected_cursor_vertical)),
+        expected_scroll: expected_scroll.map(|(left, top)| ScrollViewportTo(left, top))
     }
 }
 
@@ -111,14 +116,14 @@ fn move_cursor_no_scroll() {
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor_pos, (6, 1));
     assert_eq!(state.viewport.pos(), (0, 0));
-    assert_eq!(state.lines, vec![
+    assert_eq!(state.content.lines, vec![
         "______ ______",
         " ______",
         " ______",
         "_____________"
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(6, 0)));
+    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(6, 0, false)));
     assert_eq!(tc.expected_scroll, None);
 }
 
@@ -156,7 +161,7 @@ fn cursor_top_left() {
 fn move_cursor_and_scroll() {
     let tc = parse_test_case(vec![
     //   012345678901234567890123
-        "_________ ╔_____▯___   ",          // 0
+        "_________ ╔_____△___   ",          // 0
         "_________ __________________",     // 1
         "_________ ┌───────────┐",          // 2
         "_________ │_____▮     │",          // 3
@@ -168,7 +173,7 @@ fn move_cursor_and_scroll() {
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor_pos, (16, 3));
     assert_eq!(state.viewport.pos(), (10, 2));
-    assert_eq!(state.lines, vec![
+    assert_eq!(state.content.lines, vec![
         "_________ ______ ___",
         "_________ __________________",
         "_________ _____________", // 1
@@ -177,7 +182,7 @@ fn move_cursor_and_scroll() {
         "_________ _____________"  // 4
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(16, 0)));
+    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(16, 0, true)));
     assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(10, 0)));
 }
 
@@ -196,7 +201,7 @@ fn document_start() {
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor_pos, (8, 3));
     assert_eq!(state.viewport.pos(), (1, 1));
-    assert_eq!(state.lines, vec![
+    assert_eq!(state.content.lines, vec![
         " _____________",
         "______________",
         "_ _____",
@@ -204,7 +209,7 @@ fn document_start() {
         "______________"
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(0, 0)));
+    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(0, 0, false)));
     assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(0, 0)));
 }
 
@@ -218,7 +223,7 @@ fn eol() {
     ]);
 
     let state = tc.editor_state;
-    assert_eq!(state.lines, vec![
+    assert_eq!(state.content.lines, vec![
     //   01234567890123
         "_____________",
         " ______",
@@ -239,7 +244,7 @@ fn eof() {
     ]);
 
     let state = tc.editor_state;
-    assert_eq!(state.lines, vec![
+    assert_eq!(state.content.lines, vec![
         "_____________",
         " _____",
         " _______",

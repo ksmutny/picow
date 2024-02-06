@@ -1,12 +1,14 @@
+use super::content::EditorContent;
+
 pub type CursorPosition = (u16, u16);
 pub type ViewportDimensions = (u16, u16);
 pub type AbsPosition = (usize, usize);
 
 
 pub struct EditorState {
+    pub content: EditorContent,
     pub viewport: Viewport,
     pub cursor_pos: AbsPosition,
-    pub lines: Vec<String>,
     vertical_nav: VerticalNavigation,
 }
 
@@ -46,9 +48,9 @@ struct VerticalNavigation {
 
 impl EditorState {
 
-    pub fn new(lines: Vec<String>, viewport: Viewport, cursor_pos: AbsPosition) -> Self {
+    pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: AbsPosition) -> Self {
         let vertical_nav = VerticalNavigation { in_progress: false, last_x: 0 };
-        Self { viewport, cursor_pos, lines, vertical_nav }
+        Self { content, viewport, cursor_pos, vertical_nav }
     }
 
     pub fn scroll_viewport(&mut self, x: usize, y: usize) {
