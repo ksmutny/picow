@@ -1,5 +1,6 @@
 pub mod content;
 pub mod state;
+pub mod events;
 pub mod navigation;
 pub mod renderer;
 
@@ -37,54 +38,54 @@ impl Editor {
         EditorRenderer::close()
     }
 
-    fn event_loop(&mut self) -> io::Result<()> {
-        loop {
-            match event::read()? {
-                Event::Key(KeyEvent { kind: KeyEventKind::Press, code, modifiers, .. }) => {
-                    use KeyCode::*;
-                    const CTRL: KeyModifiers = KeyModifiers::CONTROL;
+    // fn event_loop(&mut self) -> io::Result<()> {
+    //     loop {
+    //         match event::read()? {
+    //             Event::Key(KeyEvent { kind: KeyEventKind::Press, code, modifiers, .. }) => {
+    //                 use KeyCode::*;
+    //                 const CTRL: KeyModifiers = KeyModifiers::CONTROL;
 
-                    match (code, modifiers) {
-                        (Esc, _) => break Ok(()),
+    //                 match (code, modifiers) {
+    //                     (Esc, _) => break Ok(()),
 
-                        (Char(c), _) => self.insert_char(c),
-                        (Enter, _) => self.insert_char('\n'),
-                        (Backspace, _) => self.backspace(),
-                        (Delete, _) => self.delete_char(),
+    //                     (Char(c), _) => self.insert_char(c),
+    //                     (Enter, _) => self.insert_char('\n'),
+    //                     (Backspace, _) => self.backspace(),
+    //                     (Delete, _) => self.delete_char(),
 
-                        (Up, CTRL) => self.queue(self.state.scroll_up(1)),
-                        (Down, CTRL) => self.queue(self.state.scroll_down(1)),
-                        (Home, CTRL) =>  self.queue(self.state.move_document_start()),
-                        (End, CTRL) =>  self.queue(self.state.move_document_end()),
+    //                     (Up, CTRL) => self.queue(self.state.scroll_up(1)),
+    //                     (Down, CTRL) => self.queue(self.state.scroll_down(1)),
+    //                     (Home, CTRL) =>  self.queue(self.state.move_document_start()),
+    //                     (End, CTRL) =>  self.queue(self.state.move_document_end()),
 
-                        (Right, _) => self.queue(self.state.move_right()),
-                        (Left, _) => self.queue(self.state.move_left()),
-                        (Up, _) => self.queue(self.state.move_up(1)),
-                        (Down, _) => self.queue(self.state.move_down(1)),
-                        (Home, _) => self.queue(self.state.move_line_start()),
-                        (End, _) => self.queue(self.state.move_line_end()),
-                        (PageUp, _) => self.queue(self.state.move_page_up()),
-                        (PageDown, _) =>  self.queue(self.state.move_page_down()),
-                        _ => {}
-                    }
-                },
-                Event::Mouse(MouseEvent { kind, column, row, .. }) => {
-                    use MouseButton::*;
+    //                     (Right, _) => self.queue(self.state.move_right()),
+    //                     (Left, _) => self.queue(self.state.move_left()),
+    //                     (Up, _) => self.queue(self.state.move_up(1)),
+    //                     (Down, _) => self.queue(self.state.move_down(1)),
+    //                     (Home, _) => self.queue(self.state.move_line_start()),
+    //                     (End, _) => self.queue(self.state.move_line_end()),
+    //                     (PageUp, _) => self.queue(self.state.move_page_up()),
+    //                     (PageDown, _) =>  self.queue(self.state.move_page_down()),
+    //                     _ => {}
+    //                 }
+    //             },
+    //             Event::Mouse(MouseEvent { kind, column, row, .. }) => {
+    //                 use MouseButton::*;
 
-                    match kind {
-                        MouseEventKind::Down(Left) => self.queue(self.state.click(self.state.viewport.to_absolute((column + 1, row + 1)))),
-                        MouseEventKind::ScrollDown => self.queue(self.state.scroll_down(1)),
-                        MouseEventKind::ScrollUp => self.queue(self.state.scroll_up(1)),
-                        _ => {}
-                    }
-                },
-                Event::Resize(width, height) => self.resize((width, height)),
-                _ => {}
-            }
-            self.renderer.refresh_status_bar(&self.state);
-            self.renderer.flush()?;
-        }
-    }
+    //                 match kind {
+    //                     MouseEventKind::Down(Left) => self.queue(self.state.click(self.state.viewport.to_absolute((column + 1, row + 1)))),
+    //                     MouseEventKind::ScrollDown => self.queue(self.state.scroll_down(1)),
+    //                     MouseEventKind::ScrollUp => self.queue(self.state.scroll_up(1)),
+    //                     _ => {}
+    //                 }
+    //             },
+    //             Event::Resize(width, height) => self.resize((width, height)),
+    //             _ => {}
+    //         }
+    //         self.renderer.refresh_status_bar(&self.state);
+    //         self.renderer.flush()?;
+    //     }
+    // }
 
     fn queue(&mut self, (scroll_cmd, cursor_cmd): NavigationCommand) {
         if let Some(ScrollViewportTo(left, top)) = scroll_cmd {

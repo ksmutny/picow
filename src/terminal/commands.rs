@@ -14,5 +14,8 @@ pub enum Command {
     EnterAlternateScreen,
     LeaveAlternateScreen,
 
+    EnableMouseCapture,
+    DisableMouseCapture,
+
     SetWindowTitle(String),
 }

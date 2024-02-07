@@ -1,10 +1,12 @@
-mod ansi;
+pub mod ansi_in;
+mod ansi_out;
 pub mod commands;
+pub mod events;
 mod winapi;
 
 use std::io::{self, Write};
 
-use ansi::ansi;
+use ansi_out::ansi;
 use commands::Command;
 
 pub struct CommandBuffer {

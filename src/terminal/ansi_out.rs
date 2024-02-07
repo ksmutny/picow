@@ -29,6 +29,9 @@ pub fn ansi(command: &Command) -> String {
         EnterAlternateScreen => csi!("?1049h{}", ansi(&MoveTo(1  , 1))),
         LeaveAlternateScreen => csi!("?1049l"),
 
+        EnableMouseCapture => csi!("?1002h"),
+        DisableMouseCapture => csi!("?1002l"),
+
         SetWindowTitle(title) => osc!("0;{}", title),
     }
 }

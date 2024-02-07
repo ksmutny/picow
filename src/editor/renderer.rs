@@ -20,6 +20,7 @@ impl EditorRenderer {
     pub fn open(file_name: String) -> io::Result<()> {
         terminal::init()?;
         Command::EnterAlternateScreen.execute()?;
+        Command::EnableMouseCapture.execute()?;
         Command::SetWindowTitle(file_name).execute()
     }
 
@@ -29,6 +30,7 @@ impl EditorRenderer {
     }
 
     pub fn close() -> io::Result<()> {
+        Command::DisableMouseCapture.execute()?;
         Command::LeaveAlternateScreen.execute()
     }
 
