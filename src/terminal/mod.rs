@@ -2,6 +2,7 @@ pub mod ansi_in;
 mod ansi_out;
 pub mod commands;
 pub mod events;
+pub mod reader;
 mod winapi;
 
 use std::io::{self, Write};

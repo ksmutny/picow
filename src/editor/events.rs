@@ -1,21 +1,23 @@
-use std::io::{self, Read};
+use std::io;
 
-use crate::terminal::{ansi_in::parse, events::Event::*, events::Key::*};
+use crate::terminal::{
+    ansi_in::parse,
+    events::{Event::*, Key::*},
+    reader::{read_cmd, StdinReader}
+};
 
 use super::Editor;
 
 
 impl Editor {
     pub fn event_loop(&mut self) -> io::Result<()> {
-        let mut stdin = std::io::stdin();
-        let mut buffer = [0; 1024];
+        let mut stdin = StdinReader::new();
 
         loop {
-            let n = stdin.read(&mut buffer).unwrap();
-            let input = std::str::from_utf8(&buffer[..n]).unwrap();
-
+            let input = read_cmd(&mut stdin)?;
             println!("{:?}", input);
-            match parse(input) {
+
+            match parse(&input) {
                 Ok((_, event)) => match event {
                     Key(key) => match key {
                         Esc => break Ok(()),
@@ -32,6 +34,12 @@ impl Editor {
                         Right => println!("Arrow right"),
                         Left => println!("Arrow left"),
                         Char(c) => println!("Char: {} {}", c, c as u8),
+                    },
+                    Paste(s) => {
+                        let lines = s.split("\r");
+                        for line in lines {
+                            println!("Paste: {}", line);
+                        }
                     },
                 },
                 Err(err) => eprintln!("Parse error: {}", err),

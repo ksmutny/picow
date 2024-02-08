@@ -1,18 +1,18 @@
 use nom::{
     branch::alt,
-    bytes::streaming::tag,
+    bytes::{complete::take_until, streaming::tag},
     character::complete::satisfy,
     combinator::eof,
-    sequence::preceded,
+    sequence::{delimited, preceded},
     IResult, Parser
 };
 
 use super::events::{Event::{self, *}, Key::{self, *}};
 
-
 pub fn parse(input: &str) -> IResult<&str, Event> {
     alt((
         special_char.map(Key),
+        bracketed_paste.map(Paste),
         preceded(
             tag("\x1B["),
             special_key.map(Key),
@@ -22,6 +22,17 @@ pub fn parse(input: &str) -> IResult<&str, Event> {
         ),
         unicode_char.map(|c| Key(Char(c))),
     ))(input)
+}
+
+pub const BRACKETED_PASTE_START: &str = "\x1B[200~";
+pub const BRACKETED_PASTE_END: &str = "\x1B[201~";
+
+pub fn bracketed_paste(input: &str) -> IResult<&str, &str> {
+    delimited(
+        tag(BRACKETED_PASTE_START),
+        take_until(BRACKETED_PASTE_END),
+        tag(BRACKETED_PASTE_END),
+    )(input)
 }
 
 fn unicode_char(input: &str) -> IResult<&str, char> {
@@ -53,7 +64,7 @@ fn special_key(input: &str) -> IResult<&str, Key> {
 
 #[cfg(test)]
 mod tests {
-    use super::{*, Event::*, Key::*};
+    use super::*;
 
     macro_rules! parse {
         ($name:ident: $input:expr => $expected:expr) => {
@@ -78,4 +89,6 @@ mod tests {
     parse!(key_end: "\x1B[F" => Key(End));
     parse!(key_page_up: "\x1B[5~" => Key(PageUp));
     parse!(key_page_down: "\x1B[6~" => Key(PageDown));
+
+    parse!(paste: "\x1B[200~Hello World!\x1B[201~" => Paste("Hello World!"));
 }
