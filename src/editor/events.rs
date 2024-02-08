@@ -2,7 +2,7 @@ use std::io;
 
 use crate::terminal::{
     ansi_in::parse,
-    events::{Event::*, Key::*},
+    events::{Event::*, Key::*, Mouse::*},
     reader::{read_cmd, StdinReader}
 };
 
@@ -34,6 +34,11 @@ impl Editor {
                         Right => println!("Arrow right"),
                         Left => println!("Arrow left"),
                         Char(c) => println!("Char: {} {}", c, c as u8),
+                    },
+                    Mouse(mouse) => match mouse {
+                        Button(button, event, x, y) => println!("{:?}: {:?} at ({}, {})", event, button, x, y),
+                        WheelUp(x, y) => println!("Wheel up at ({}, {})", x, y),
+                        WheelDown(x, y) => println!("Wheel down at ({}, {})", x, y),
                     },
                     Paste(s) => {
                         let lines = s.split("\r");

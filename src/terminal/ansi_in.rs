@@ -1,13 +1,15 @@
 use nom::{
     branch::alt,
     bytes::{complete::take_until, streaming::tag},
-    character::complete::satisfy,
-    combinator::eof,
-    sequence::{delimited, preceded},
+    character::complete::{digit1, satisfy},
+    combinator::{eof, map_res},
+    error::Error,
+    sequence::{delimited, preceded, tuple},
     IResult, Parser
 };
 
-use super::events::{Event::{self, *}, Key::{self, *}};
+use super::events::{Event::{self, *}, Key::{self, *}, Mouse::{self, *}, MouseButton, MouseEvent::*};
+
 
 pub fn parse(input: &str) -> IResult<&str, Event> {
     alt((
@@ -15,10 +17,10 @@ pub fn parse(input: &str) -> IResult<&str, Event> {
         bracketed_paste.map(Paste),
         preceded(
             tag("\x1B["),
-            special_key.map(Key),
-            // alt((
-                // parse_mouse_press.map(Event::MousePress),
-            // ))
+            alt((
+                special_key.map(Key),
+                mouse.map(Mouse),
+            ))
         ),
         unicode_char.map(|c| Key(Char(c))),
     ))(input)
@@ -62,6 +64,43 @@ fn special_key(input: &str) -> IResult<&str, Key> {
     ))(input)
 }
 
+fn mouse(input: &str) -> IResult<&str, Mouse> {
+    let (rest, (button, x, y, event)) = preceded(
+        tag("<"),
+        tuple((
+            map_res(digit1, str::parse::<u8>),
+            preceded(tag(";"), map_res(digit1, str::parse::<u16>)),
+            preceded(tag(";"), map_res(digit1, str::parse::<u16>)),
+            alt((tag("M"), tag("m"))),
+        )),
+    )(input)?;
+
+    let mouse = match button {
+        64 => WheelUp(x, y),
+        65 => WheelDown(x, y),
+        _ => Button(
+            match button & 0b11 {
+                0 => MouseButton::Left,
+                1 => MouseButton::Middle,
+                2 => MouseButton::Right,
+                _ => return Err(nom::Err::Error(Error { input, code: nom::error::ErrorKind::Char })),
+            },
+            match (button & 0b00100000, event) {
+                (0, "M") => Press,
+                (0, "m") => Release,
+                (32, "M") => Drag,
+                (32, "m") => Drag,
+                _ => return Err(nom::Err::Error(Error { input, code: nom::error::ErrorKind::Char })),
+            },
+            x,
+            y,
+        ),
+    };
+
+    Ok((rest, mouse))
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,4 +130,19 @@ mod tests {
     parse!(key_page_down: "\x1B[6~" => Key(PageDown));
 
     parse!(paste: "\x1B[200~Hello World!\x1B[201~" => Paste("Hello World!"));
+
+    parse!(mouse_left_press: "\x1B[<0;128;43M" => Mouse(Button(MouseButton::Left, Press, 128, 43)));
+    parse!(mouse_middle_press: "\x1B[<1;1;12M" => Mouse(Button(MouseButton::Middle, Press, 1, 12)));
+    parse!(mouse_right_press: "\x1B[<2;98;443M" => Mouse(Button(MouseButton::Right, Press, 98, 443)));
+
+    parse!(mouse_left_drag: "\x1B[<32;128;43M" => Mouse(Button(MouseButton::Left, Drag, 128, 43)));
+    parse!(mouse_middle_drag: "\x1B[<33;1;12M" => Mouse(Button(MouseButton::Middle, Drag, 1, 12)));
+    parse!(mouse_right_drag: "\x1B[<34;98;443M" => Mouse(Button(MouseButton::Right, Drag, 98, 443)));
+
+    parse!(mouse_left_release: "\x1B[<0;128;43m" => Mouse(Button(MouseButton::Left, Release, 128, 43)));
+    parse!(mouse_middle_release: "\x1B[<1;1;12m" => Mouse(Button(MouseButton::Middle, Release, 1, 12)));
+    parse!(mouse_right_release: "\x1B[<2;98;443m" => Mouse(Button(MouseButton::Right, Release, 98, 443)));
+
+    parse!(mouse_wheel_up: "\x1B[<64;128;43M" => Mouse(WheelUp(128, 43)));
+    parse!(mouse_wheel_down: "\x1B[<65;1;12M" => Mouse(WheelDown(1, 12)));
 }

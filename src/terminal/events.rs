@@ -1,6 +1,7 @@
 #[derive(Debug, PartialEq)]
 pub enum Event<'a> {
     Key(Key),
+    Mouse(Mouse),
     Paste(&'a str),
 }
 
@@ -20,4 +21,25 @@ pub enum Key {
     End,
     PageUp,
     PageDown,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Mouse {
+    Button(MouseButton, MouseEvent, u16, u16),
+    WheelUp(u16, u16),
+    WheelDown(u16, u16),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum MouseButton {
+    Left,
+    Middle,
+    Right,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum MouseEvent {
+    Press,
+    Drag,
+    Release,
 }
