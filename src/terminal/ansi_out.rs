@@ -32,6 +32,9 @@ pub fn ansi(command: &Command) -> String {
         EnableMouseCapture => csi!("?1002h"),
         DisableMouseCapture => csi!("?1002l"),
 
+        EnableBracketedPaste => csi!("?2004h"),
+        DisableBracketedPaste => csi!("?2004l"),
+
         SetWindowTitle(title) => osc!("0;{}", title),
     }
 }

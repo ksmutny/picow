@@ -17,5 +17,8 @@ pub enum Command {
     EnableMouseCapture,
     DisableMouseCapture,
 
+    EnableBracketedPaste,
+    DisableBracketedPaste,
+
     SetWindowTitle(String),
 }

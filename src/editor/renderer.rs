@@ -21,6 +21,7 @@ impl EditorRenderer {
         terminal::init()?;
         Command::EnterAlternateScreen.execute()?;
         Command::EnableMouseCapture.execute()?;
+        Command::EnableBracketedPaste.execute()?;
         Command::SetWindowTitle(file_name).execute()
     }
 
@@ -30,6 +31,7 @@ impl EditorRenderer {
     }
 
     pub fn close() -> io::Result<()> {
+        Command::DisableBracketedPaste.execute()?;
         Command::DisableMouseCapture.execute()?;
         Command::LeaveAlternateScreen.execute()
     }
