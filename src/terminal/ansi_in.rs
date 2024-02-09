@@ -29,12 +29,12 @@ pub fn parse(input: &str) -> IResult<&str, Event> {
 pub const BRACKETED_PASTE_START: &str = "\x1B[200~";
 pub const BRACKETED_PASTE_END: &str = "\x1B[201~";
 
-pub fn bracketed_paste(input: &str) -> IResult<&str, &str> {
+pub fn bracketed_paste(input: &str) -> IResult<&str, String> {
     delimited(
         tag(BRACKETED_PASTE_START),
         take_until(BRACKETED_PASTE_END),
         tag(BRACKETED_PASTE_END),
-    )(input)
+    )(input).map(|(rest, paste)| (rest, paste.to_string()))
 }
 
 fn unicode_char(input: &str) -> IResult<&str, char> {
@@ -129,7 +129,7 @@ mod tests {
     parse!(key_page_up: "\x1B[5~" => Key(PageUp));
     parse!(key_page_down: "\x1B[6~" => Key(PageDown));
 
-    parse!(paste: "\x1B[200~Hello World!\x1B[201~" => Paste("Hello World!"));
+    parse!(paste: "\x1B[200~Hello World!\x1B[201~" => Paste("Hello World!".to_string()));
 
     parse!(mouse_left_press: "\x1B[<0;128;43M" => Mouse(Button(MouseButton::Left, Press, 128, 43)));
     parse!(mouse_middle_press: "\x1B[<1;1;12M" => Mouse(Button(MouseButton::Middle, Press, 1, 12)));

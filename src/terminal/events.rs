@@ -1,8 +1,8 @@
 #[derive(Debug, PartialEq)]
-pub enum Event<'a> {
+pub enum Event {
     Key(Key),
     Mouse(Mouse),
-    Paste(&'a str),
+    Paste(String),
 }
 
 #[derive(Debug, PartialEq)]
