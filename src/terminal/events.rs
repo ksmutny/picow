@@ -9,6 +9,7 @@ pub enum Event {
 pub enum Key {
     Char(char),
     Esc,
+    Enter,
     Tab,
     Backspace,
     Insert,

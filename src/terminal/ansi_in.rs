@@ -46,6 +46,7 @@ fn special_char(input: &str) -> IResult<&str, Key> {
         preceded(tag("\x1B"), eof).map(|_| Key::Esc),
         tag("\u{7F}").map(|_| Key::Backspace),
         tag("\t").map(|_| Key::Tab),
+        tag("\n").map(|_| Key::Enter),
     ))(input)
 }
 
