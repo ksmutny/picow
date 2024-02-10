@@ -1,12 +1,12 @@
 #[derive(Debug, PartialEq)]
 pub enum Event {
-    Key(Key),
+    Key(KeyCode, u8),
     Mouse(Mouse),
     Paste(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Key {
+pub enum KeyCode {
     Char(char),
     Esc,
     Enter,
@@ -23,6 +23,10 @@ pub enum Key {
     PageUp,
     PageDown,
 }
+
+pub const CTRL: u8 = 0b0001;
+pub const ALT: u8 = 0b0010;
+pub const SHIFT: u8 = 0b0100;
 
 #[derive(Debug, PartialEq)]
 pub enum Mouse {

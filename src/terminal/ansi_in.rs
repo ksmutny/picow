@@ -2,27 +2,28 @@ use nom::{
     branch::alt,
     bytes::{complete::take_until, streaming::tag},
     character::complete::{digit1, satisfy},
-    combinator::{eof, map_res},
+    combinator::{eof, map_res, opt},
     error::Error,
-    sequence::{delimited, preceded, tuple},
+    sequence::{delimited, preceded, terminated, tuple},
     IResult, Parser
 };
 
-use super::events::{Event::{self, *}, Key::{self, *}, Mouse::{self, *}, MouseButton, MouseEvent::*};
+use super::events::{*, Event::{self, *}, KeyCode::*, Mouse::{self, *}, MouseButton, MouseEvent::*};
 
 
 pub fn parse(input: &str) -> IResult<&str, Event> {
     alt((
-        special_char.map(Key),
+        special_char,
         bracketed_paste.map(Paste),
         preceded(
             tag("\x1B["),
             alt((
-                special_key.map(Key),
+                cursor_key,
+                special_key,
                 mouse.map(Mouse),
             ))
         ),
-        unicode_char.map(|c| Key(Char(c))),
+        unicode_char.map(|c| Key(Char(c), 0)),
     ))(input)
 }
 
@@ -32,37 +33,68 @@ pub const BRACKETED_PASTE_END: &str = "\x1B[201~";
 pub fn bracketed_paste(input: &str) -> IResult<&str, String> {
     delimited(
         tag(BRACKETED_PASTE_START),
-        take_until(BRACKETED_PASTE_END),
+        take_until(BRACKETED_PASTE_END).map(str::to_string),
         tag(BRACKETED_PASTE_END),
-    )(input).map(|(rest, paste)| (rest, paste.to_string()))
+    )(input)
 }
 
 fn unicode_char(input: &str) -> IResult<&str, char> {
     satisfy(|c| c >= ' ')(input)
 }
 
-fn special_char(input: &str) -> IResult<&str, Key> {
+fn special_char(input: &str) -> IResult<&str, Event> {
     alt((
-        preceded(tag("\x1B"), eof).map(|_| Key::Esc),
-        tag("\u{7F}").map(|_| Key::Backspace),
-        tag("\t").map(|_| Key::Tab),
-        tag("\n").map(|_| Key::Enter),
+        preceded(tag("\x1B"), eof).map(|_| Key(Esc, 0)),
+        tag("\u{7F}").map(|_| Key(Backspace, 0)),
+        tag("\t").map(|_| Key(Tab, 0)),
+        tag("\n").map(|_| Key(Enter, 0)),
     ))(input)
 }
 
-fn special_key(input: &str) -> IResult<&str, Key> {
-    alt((
-        tag("2~").map(|_| Key::Insert),
-        tag("3~").map(|_| Key::Delete),
-        tag("H").map(|_| Key::Home),
-        tag("F").map(|_| Key::End),
-        tag("5~").map(|_| Key::PageUp),
-        tag("6~").map(|_| Key::PageDown),
-        tag("A").map(|_| Key::Up),
-        tag("B").map(|_| Key::Down),
-        tag("C").map(|_| Key::Right),
-        tag("D").map(|_| Key::Left),
-    ))(input)
+fn cursor_key(input: &str) -> IResult<&str, Event> {
+    tuple((
+        opt(preceded(tag("1;"), digit1)).map(key_modifiers),
+        alt((
+            tag("A").map(|_| Up),
+            tag("B").map(|_| Down),
+            tag("C").map(|_| Right),
+            tag("D").map(|_| Left),
+            tag("H").map(|_| Home),
+            tag("F").map(|_| End),
+        ))
+    ))
+    .map(|(modifiers, key)| Key(key, modifiers))
+    .parse(input)
+}
+
+fn key_modifiers(s: Option<&str>) -> u8 {
+    match s {
+        Some("2") => SHIFT,
+        Some("3") => ALT,
+        Some("4") => ALT | SHIFT,
+        Some("5") => CTRL,
+        Some("6") => CTRL | SHIFT,
+        Some("7") => CTRL | ALT,
+        Some("8") => CTRL | ALT | SHIFT,
+        _ => 0,
+    }
+}
+
+fn special_key(input: &str) -> IResult<&str, Event> {
+    terminated(
+        tuple((
+            alt((
+                tag("2").map(|_| Insert),
+                tag("3").map(|_| Delete),
+                tag("5").map(|_| PageUp),
+                tag("6").map(|_| PageDown),
+            )),
+            opt(preceded(tag(";"), digit1)).map(key_modifiers),
+        )),
+        tag("~")
+    )
+    .map(|(key, modifiers)| Key(key, modifiers))
+    .parse(input)
 }
 
 fn mouse(input: &str) -> IResult<&str, Mouse> {
@@ -115,20 +147,34 @@ mod tests {
         };
     }
 
-    parse!(key_x: "x" => Key(Char('x')));
+    parse!(key_x: "x" => Key(Char('x'), 0));
     // parse!(key_esc: "\x1B" => Key(Esc));
-    parse!(key_backspace: "\u{7F}" => Key(Backspace));
-    parse!(key_tab: "\t" => Key(Tab));
-    parse!(key_up: "\x1B[A" => Key(Up));
-    parse!(key_down:"\x1B[B" => Key(Down));
-    parse!(key_right: "\x1B[C" => Key(Right));
-    parse!(key_left: "\x1B[D" => Key(Left));
-    parse!(key_insert: "\x1B[2~" => Key(Insert));
-    parse!(key_delete: "\x1B[3~" => Key(Delete));
-    parse!(key_home: "\x1B[H" => Key(Home));
-    parse!(key_end: "\x1B[F" => Key(End));
-    parse!(key_page_up: "\x1B[5~" => Key(PageUp));
-    parse!(key_page_down: "\x1B[6~" => Key(PageDown));
+    parse!(key_backspace: "\u{7F}" => Key(Backspace, 0));
+    parse!(key_tab: "\t" => Key(Tab, 0));
+    parse!(key_up: "\x1B[A" => Key(Up, 0));
+    parse!(key_down:"\x1B[B" => Key(Down, 0));
+    parse!(key_right: "\x1B[C" => Key(Right, 0));
+    parse!(key_left: "\x1B[D" => Key(Left, 0));
+    parse!(key_home: "\x1B[H" => Key(Home, 0));
+    parse!(key_end: "\x1B[F" => Key(End, 0));
+
+    parse!(key_ctrl_up: "\x1B[1;5A" => Key(Up, CTRL));
+    parse!(key_alt_down: "\x1B[1;3B" => Key(Down, ALT));
+    parse!(key_shift_right: "\x1B[1;2C" => Key(Right, SHIFT));
+    parse!(key_ctrl_shift_left: "\x1B[1;6D" => Key(Left, CTRL | SHIFT));
+    parse!(key_ctrl_alt_home: "\x1B[1;7H" => Key(Home, CTRL | ALT));
+    parse!(key_alt_shift_end: "\x1B[1;4F" => Key(End, ALT | SHIFT));
+    parse!(key_control_alt_shift_up: "\x1B[1;8A" => Key(Up, CTRL | ALT | SHIFT));
+
+    parse!(key_insert: "\x1B[2~" => Key(Insert, 0));
+    parse!(key_delete: "\x1B[3~" => Key(Delete, 0));
+    parse!(key_page_up: "\x1B[5~" => Key(PageUp, 0));
+    parse!(key_page_down: "\x1B[6~" => Key(PageDown, 0));
+
+    parse!(key_alt_insert: "\x1B[2;3~" => Key(Insert, ALT));
+    parse!(key_shift_delete: "\x1B[3;2~" => Key(Delete, SHIFT));
+    parse!(key_ctrl_page_up: "\x1B[5;5~" => Key(PageUp, CTRL));
+    parse!(key_ctrl_alt_page_down: "\x1B[6;7~" => Key(PageDown, CTRL | ALT));
 
     parse!(paste: "\x1B[200~Hello World!\x1B[201~" => Paste("Hello World!".to_string()));
 

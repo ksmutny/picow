@@ -2,7 +2,7 @@ use std::io;
 
 use crate::terminal::{
     ansi_in::parse,
-    events::{Event::*, Key::*, Mouse::*},
+    events::{Event::*, KeyCode::*, Mouse::*},
     reader::{read_cmd, StdinReader}
 };
 
@@ -19,21 +19,25 @@ impl Editor {
 
             match parse(&input) {
                 Ok((_, event)) => match event {
-                    Key(key) => match key {
-                        Esc => break Ok(()),
-                        Backspace => println!("Backspace"),
-                        Tab => println!("Tab"),
-                        Insert => println!("Insert"),
-                        Delete => println!("Delete"),
-                        Home => println!("Home"),
-                        End => println!("End"),
-                        PageUp => println!("Page up"),
-                        PageDown => println!("Page down"),
-                        Up => println!("Arrow up"),
-                        Down => println!("Arrow down"),
-                        Right => println!("Arrow right"),
-                        Left => println!("Arrow left"),
-                        Char(c) => println!("Char: {} {}", c, c as u8),
+                    Key(key, m) => {
+                        match key {
+                            Esc => break Ok(()),
+                            Enter => print!("Enter"),
+                            Backspace => print!("Backspace"),
+                            Tab => print!("Tab"),
+                            Insert => print!("Insert"),
+                            Delete => print!("Delete"),
+                            Home => print!("Home"),
+                            End => print!("End"),
+                            PageUp => print!("Page up"),
+                            PageDown => print!("Page down"),
+                            Up => print!("Arrow up"),
+                            Down => print!("Arrow down"),
+                            Right => print!("Arrow right"),
+                            Left => print!("Arrow left"),
+                            Char(c) => print!("Char: {} {}", c, c as u8),
+                        }
+                        println!(", Modifiers: {}", m)
                     },
                     Mouse(mouse) => match mouse {
                         Button(button, event, x, y) => println!("{:?}: {:?} at ({}, {})", event, button, x, y),
