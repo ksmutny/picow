@@ -113,17 +113,12 @@ impl Editor {
     }
 
     fn insert_char(&mut self, c: char) {
-        let (col, row) = self.state.cursor_pos;
-        let (new_row, new_col) = self.state.content.insert((row, col), &c.to_string());
-
-        self.queue((None, Some(MoveCursorTo(new_col, new_row, false))));
-        self.renderer.refresh(&self.state);
+        self.insert(&c.to_string());
     }
 
     fn insert(&mut self, str: &str) {
-        let (col, row) = self.state.cursor_pos;
-        let (new_row, new_col) = self.state.content.insert((row, col), str);
-        self.queue((None, Some(MoveCursorTo(new_col, new_row, false))));
+        let new_cursor_pos = self.state.content.insert(self.state.cursor_pos, str);
+        self.queue(self.state.click(new_cursor_pos));
         self.renderer.refresh(&self.state);
     }
 
