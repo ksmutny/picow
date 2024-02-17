@@ -41,12 +41,11 @@ impl EditorRenderer {
     }
 
     pub fn refresh(&mut self, state: &EditorState) {
-        self.commands.queue(Command::Clear);
-
         for (i, line) in self.visible_lines(state).iter().enumerate() {
             self.commands.queue(Command::MoveTo(1, 1 + i as u16));
             let slice = self.visible_part(line, state);
             self.commands.queue(Command::Print(slice.to_string()));
+            self.commands.queue(Command::ClearToEndOfLine);
         }
     }
 

@@ -16,6 +16,7 @@ pub fn ansi(command: &Command) -> String {
     match command {
         Clear => csi!("2J{}", ansi(&MoveTo(1, 1))),
         ClearLine => csi!("2K"),
+        ClearToEndOfLine => csi!("K"),
         Print(s) => s.to_string(),
 
         MoveTo(x, y) => csi!("{};{}H", y, x),
