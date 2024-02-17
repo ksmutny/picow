@@ -24,21 +24,14 @@ pub fn read_cmd<'a, R: Reader>(reader: &'a mut R) -> io::Result<String> {
     let mut buffer = String::from(input);
 
     if input == ansi_in::BRACKETED_PASTE_START {
-        read_bracketed_paste(reader, &mut buffer)?;
-    }
+        loop {
+            let input = reader.read()?;
+            buffer.push_str(input);
 
-    Ok(buffer)
-}
-
-fn read_bracketed_paste<'a, R: Reader>(reader: &mut R, buffer: &'a mut String) -> io::Result<&'a mut String> {
-    loop {
-        let input = reader.read()?;
-        buffer.push_str(input);
-
-        if input.ends_with(ansi_in::BRACKETED_PASTE_END) {
-            break;
+            if input.ends_with(ansi_in::BRACKETED_PASTE_END) { break }
         }
     }
+
     Ok(buffer)
 }
 
