@@ -1,12 +1,12 @@
 pub mod content;
 pub mod state;
-pub mod events;
+// pub mod events;
 pub mod navigation;
 pub mod renderer;
 
 use std::io;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
     content::EditorContent, navigation::{MoveCursorTo, NavigationCommand, ScrollViewportTo},
@@ -33,59 +33,63 @@ impl Editor {
         EditorRenderer::open("editor.rs".to_string())?;
         self.renderer.refresh(&self.state);
         self.renderer.refresh_cursor(&self.state);
+        self.renderer.flush()?;
 
         self.event_loop()?;
         EditorRenderer::close()
     }
 
-    // fn event_loop(&mut self) -> io::Result<()> {
-    //     loop {
-    //         match event::read()? {
-    //             Event::Key(KeyEvent { kind: KeyEventKind::Press, code, modifiers, .. }) => {
-    //                 use KeyCode::*;
-    //                 const CTRL: KeyModifiers = KeyModifiers::CONTROL;
+    fn event_loop(&mut self) -> io::Result<()> {
+        loop {
+            let event = read_event()?;
 
-    //                 match (code, modifiers) {
-    //                     (Esc, _) => break Ok(()),
+            let command = match event {
+                Key(ref key, modifiers) => match (key, modifiers) {
+                    (Esc, 0) => break Ok(()),
+                    (Home, 0) => self.state.move_line_start(),
+                    (End, 0) => self.state.move_line_end(),
+                    (Up, 0) => self.state.move_up(1),
+                    (Down, 0) => self.state.move_down(1),
+                    (Right, 0) => self.state.move_right(),
+                    (Left, 0) => self.state.move_left(),
+                    (PageDown, 0) => self.state.move_page_down(),
+                    (PageUp, 0) => self.state.move_page_up(),
 
-    //                     (Char(c), _) => self.insert_char(c),
-    //                     (Enter, _) => self.insert_char('\n'),
-    //                     (Backspace, _) => self.backspace(),
-    //                     (Delete, _) => self.delete_char(),
+                    (Up, CTRL) => self.state.scroll_up(1),
+                    (Down, CTRL) => self.state.scroll_down(1),
+                    (Home, CTRL) => self.state.move_document_start(),
+                    (End, CTRL) => self.state.move_document_end(),
 
-    //                     (Up, CTRL) => self.queue(self.state.scroll_up(1)),
-    //                     (Down, CTRL) => self.queue(self.state.scroll_down(1)),
-    //                     (Home, CTRL) =>  self.queue(self.state.move_document_start()),
-    //                     (End, CTRL) =>  self.queue(self.state.move_document_end()),
+                    _ => (None, None)
+                },
+                Mouse(ref mouse) => match mouse {
+                    Button(MouseButton::Left, Press, column, row) => self.state.click(self.state.viewport.to_absolute((*column, *row))),
+                    WheelUp(_, _) => self.state.scroll_up(1),
+                    WheelDown(_, _) => self.state.scroll_down(1),
+                    _ => (None, None)
+                },
+                _ => (None, None)
+            };
 
-    //                     (Right, _) => self.queue(self.state.move_right()),
-    //                     (Left, _) => self.queue(self.state.move_left()),
-    //                     (Up, _) => self.queue(self.state.move_up(1)),
-    //                     (Down, _) => self.queue(self.state.move_down(1)),
-    //                     (Home, _) => self.queue(self.state.move_line_start()),
-    //                     (End, _) => self.queue(self.state.move_line_end()),
-    //                     (PageUp, _) => self.queue(self.state.move_page_up()),
-    //                     (PageDown, _) =>  self.queue(self.state.move_page_down()),
-    //                     _ => {}
-    //                 }
-    //             },
-    //             Event::Mouse(MouseEvent { kind, column, row, .. }) => {
-    //                 use MouseButton::*;
+            self.queue(command);
 
-    //                 match kind {
-    //                     MouseEventKind::Down(Left) => self.queue(self.state.click(self.state.viewport.to_absolute((column + 1, row + 1)))),
-    //                     MouseEventKind::ScrollDown => self.queue(self.state.scroll_down(1)),
-    //                     MouseEventKind::ScrollUp => self.queue(self.state.scroll_up(1)),
-    //                     _ => {}
-    //                 }
-    //             },
-    //             Event::Resize(width, height) => self.resize((width, height)),
-    //             _ => {}
-    //         }
-    //         self.renderer.refresh_status_bar(&self.state);
-    //         self.renderer.flush()?;
-    //     }
-    // }
+            match event {
+                Key(ref key, _) => match key {
+                    Char(c) => self.insert_char(*c),
+                    Enter => self.insert_char('\n'),
+                    Backspace => self.backspace(),
+                    Delete => self.delete_char(),
+                    _ => {}
+                },
+                Paste(s) => self.insert(&s),
+                _ => {}
+            }
+
+            self.renderer.refresh_status_bar(&self.state);
+            self.renderer.flush()?;
+        }
+    }
+
 
     fn queue(&mut self, (scroll_cmd, cursor_cmd): NavigationCommand) {
         if let Some(ScrollViewportTo(left, top)) = scroll_cmd {
@@ -110,9 +114,16 @@ impl Editor {
 
     fn insert_char(&mut self, c: char) {
         let (col, row) = self.state.cursor_pos;
-        self.state.content.insert((row, col), &c.to_string());
+        let (new_row, new_col) = self.state.content.insert((row, col), &c.to_string());
 
-        self.queue(self.state.move_right());
+        self.queue((None, Some(MoveCursorTo(new_col, new_row, false))));
+        self.renderer.refresh(&self.state);
+    }
+
+    fn insert(&mut self, str: &str) {
+        let (col, row) = self.state.cursor_pos;
+        let (new_row, new_col) = self.state.content.insert((row, col), str);
+        self.queue((None, Some(MoveCursorTo(new_col, new_row, false))));
         self.renderer.refresh(&self.state);
     }
 

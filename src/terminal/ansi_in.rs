@@ -48,6 +48,7 @@ fn special_char(input: &str) -> IResult<&str, Event> {
         tag("\u{7F}").map(|_| Key(Backspace, 0)),
         tag("\t").map(|_| Key(Tab, 0)),
         tag("\n").map(|_| Key(Enter, 0)),
+        tag("\r").map(|_| Key(Enter, 0)),
     ))(input)
 }
 
