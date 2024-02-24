@@ -44,12 +44,20 @@ fn unicode_char(input: &str) -> IResult<&str, char> {
 
 fn special_char(input: &str) -> IResult<&str, Event> {
     alt((
+        eof.map(|_| Key(Char('Z'), CTRL)),
         preceded(tag("\x1B"), eof).map(|_| Key(Esc, 0)),
         tag("\u{7F}").map(|_| Key(Backspace, 0)),
         tag("\t").map(|_| Key(Tab, 0)),
         tag("\n").map(|_| Key(Enter, 0)),
         tag("\r").map(|_| Key(Enter, 0)),
+        ctrl_char.map(|c| Key(Char(c), CTRL)),
     ))(input)
+}
+
+fn ctrl_char(input: &str) -> IResult<&str, char> {
+    satisfy(|c| c != '\x1B' && c < '\x20')
+    .map(|c| (c as u8 + 0x40) as char)
+    .parse(input)
 }
 
 fn cursor_key(input: &str) -> IResult<&str, Event> {
@@ -149,7 +157,12 @@ mod tests {
     }
 
     parse!(key_x: "x" => Key(Char('x'), 0));
-    // parse!(key_esc: "\x1B" => Key(Esc));
+
+    parse!(key_esc: "\x1B" => Key(Esc, 0));
+    parse!(key_ctrl_a: "\x01" => Key(Char('A'), CTRL));
+    parse!(key_ctrl_x: "\x18" => Key(Char('X'), CTRL));
+    parse!(key_ctrl_z: "" => Key(Char('Z'), CTRL));
+
     parse!(key_backspace: "\u{7F}" => Key(Backspace, 0));
     parse!(key_tab: "\t" => Key(Tab, 0));
     parse!(key_up: "\x1B[A" => Key(Up, 0));

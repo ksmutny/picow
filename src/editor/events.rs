@@ -10,7 +10,7 @@ use super::Editor;
 
 
 impl Editor {
-    pub fn event_loop(&mut self) -> io::Result<()> {
+    pub fn event_loop_dummy(&mut self) -> io::Result<()> {
         let mut stdin = StdinReader::new();
 
         loop {
@@ -35,7 +35,7 @@ impl Editor {
                             Down => print!("Arrow down"),
                             Right => print!("Arrow right"),
                             Left => print!("Arrow left"),
-                            Char(c) => print!("Char: {} {}", c, c as u8),
+                            Char(c) => print!("Char: {} {}", c, c as u32),
                         }
                         println!(", Modifiers: {}", m)
                     },
