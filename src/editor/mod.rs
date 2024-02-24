@@ -31,13 +31,11 @@ impl Editor {
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        EditorRenderer::open("editor.rs".to_string())?;
         self.renderer.refresh(&self.state);
         self.renderer.refresh_cursor(&self.state);
         self.renderer.flush()?;
 
-        self.event_loop()?;
-        EditorRenderer::close()
+        self.event_loop()
     }
 
     fn event_loop(&mut self) -> io::Result<()> {

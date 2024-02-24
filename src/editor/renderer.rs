@@ -1,6 +1,6 @@
 use std::{io, cmp::min};
 
-use crate::terminal::{self, buffer::{CommandBuffer, CommandExecutor}, commands::Command};
+use crate::terminal::{self, buffer::CommandBuffer, commands::Command};
 use super::state::{EditorState, Viewport};
 
 
@@ -17,22 +17,9 @@ impl EditorRenderer {
         }
     }
 
-    pub fn open(file_name: String) -> io::Result<()> {
-        Command::EnterAlternateScreen.execute()?;
-        Command::EnableMouseCapture.execute()?;
-        Command::EnableBracketedPaste.execute()?;
-        Command::SetWindowTitle(file_name).execute()
-    }
-
     pub fn create_viewport() -> io::Result<Viewport> {
         let (width, height) = terminal::terminal_size()?;
         Ok(Viewport::new(0, 0, width, height - 1))
-    }
-
-    pub fn close() -> io::Result<()> {
-        Command::DisableBracketedPaste.execute()?;
-        Command::DisableMouseCapture.execute()?;
-        Command::LeaveAlternateScreen.execute()
     }
 
     pub fn flush(&mut self) -> io::Result<()> {
