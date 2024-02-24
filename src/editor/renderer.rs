@@ -1,6 +1,6 @@
 use std::{io, cmp::min};
 
-use crate::terminal::{self, commands::Command, CommandBuffer, CommandExecutor};
+use crate::terminal::{self, buffer::{CommandBuffer, CommandExecutor}, commands::Command};
 use super::state::{EditorState, Viewport};
 
 
