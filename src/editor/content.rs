@@ -32,6 +32,22 @@ impl EditorContent {
         else { LF }
     }
 
+    pub fn line_end(&self, row: usize) -> AbsPosition {
+        (self.line_len(row), row)
+    }
+
+    pub fn line_len(&self, row: usize) -> usize {
+        self.lines[row].len()
+    }
+
+    pub fn last_line_end(&self) -> AbsPosition {
+        self.line_end(self.last_line_y())
+    }
+
+    pub fn last_line_y(&self) -> usize {
+        self.lines.len() - 1
+    }
+
     pub fn insert(&mut self, (row, col): AbsPosition, str: &str) -> AbsPosition {
         let mut to_insert = self.lines[row].clone();
         to_insert.insert_str(col, str);
