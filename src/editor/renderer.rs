@@ -18,7 +18,6 @@ impl EditorRenderer {
     }
 
     pub fn open(file_name: String) -> io::Result<()> {
-        terminal::init()?;
         Command::EnterAlternateScreen.execute()?;
         Command::EnableMouseCapture.execute()?;
         Command::EnableBracketedPaste.execute()?;

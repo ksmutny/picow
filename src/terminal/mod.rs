@@ -68,8 +68,12 @@ fn flush() -> io::Result<()> {
     io::stdout().flush()
 }
 
-pub fn init() -> io::Result<()> {
+pub fn init() -> io::Result<u32> {
     winapi::init_console()
+}
+
+pub fn restore_console_mode(console_mode: u32) -> io::Result<()> {
+    winapi::restore_console_mode(console_mode)
 }
 
 pub type Coordinates = (u16, u16);

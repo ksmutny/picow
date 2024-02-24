@@ -1,36 +1,48 @@
 use std::io::{self, Error};
 
 use winapi::um::{
-    consoleapi::SetConsoleMode,
+    consoleapi::{GetConsoleMode, SetConsoleMode},
     handleapi::INVALID_HANDLE_VALUE,
     processenv::GetStdHandle,
     winbase::{STD_INPUT_HANDLE, STD_OUTPUT_HANDLE},
-    wincon::{GetConsoleScreenBufferInfo, CONSOLE_SCREEN_BUFFER_INFO, ENABLE_AUTO_POSITION, ENABLE_ECHO_INPUT, ENABLE_LINE_INPUT, ENABLE_MOUSE_INPUT, ENABLE_PROCESSED_INPUT, ENABLE_VIRTUAL_TERMINAL_INPUT, ENABLE_WINDOW_INPUT},
+    wincon::{GetConsoleScreenBufferInfo, CONSOLE_SCREEN_BUFFER_INFO, ENABLE_AUTO_POSITION, ENABLE_MOUSE_INPUT, ENABLE_VIRTUAL_TERMINAL_INPUT, ENABLE_WINDOW_INPUT},
     winnt::HANDLE
 };
 
 
 const CONSOLE_MODE: u32 =
-    // ENABLE_PROCESSED_INPUT |
-    // ENABLE_LINE_INPUT |
-    // ENABLE_ECHO_INPUT |
     ENABLE_WINDOW_INPUT |
     ENABLE_MOUSE_INPUT |
     ENABLE_AUTO_POSITION |
     ENABLE_VIRTUAL_TERMINAL_INPUT;
 
-pub fn init_console() -> io::Result<()> {
+pub fn init_console() -> io::Result<u32> {
     let handle = get_std_in_handle()?;
-    set_console_mode(handle, CONSOLE_MODE)
+    let mode = get_console_mode(handle)?;
+    set_console_mode(handle, CONSOLE_MODE)?;
+    Ok(mode)
 }
 
-pub fn set_console_mode(handle: HANDLE, mode: u32) -> io::Result<()> {
+pub fn restore_console_mode(console_mode: u32) -> io::Result<()> {
+    let handle = get_std_in_handle()?;
+    set_console_mode(handle, console_mode)
+}
+
+fn get_console_mode(handle: HANDLE) -> io::Result<u32> {
+    unsafe {
+        let mut mode: u32 = 0;
+        let res = GetConsoleMode(handle, &mut mode);
+        result(res, 0, mode)
+    }
+}
+
+fn set_console_mode(handle: HANDLE, mode: u32) -> io::Result<()> {
     unsafe {
         result(SetConsoleMode(handle, mode), 0, ())
     }
 }
 
-pub fn get_std_in_handle() -> io::Result<HANDLE> {
+fn get_std_in_handle() -> io::Result<HANDLE> {
     unsafe {
         let handle = GetStdHandle(STD_INPUT_HANDLE);
         result(handle, INVALID_HANDLE_VALUE, handle)
