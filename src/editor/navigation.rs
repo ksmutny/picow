@@ -9,15 +9,14 @@ pub struct MoveCursorTo(pub usize, pub usize, pub bool);
 #[derive(PartialEq, Debug)]
 pub struct ScrollViewportTo(pub usize, pub usize);
 
-pub type NavigationCommand = (Option<ScrollViewportTo>, Option<MoveCursorTo>);
+pub type NavigationCommand = Option<MoveCursorTo>;
+pub type ScrollCommand = Option<ScrollViewportTo>;
 
 impl EditorState {
 
     fn move_to(&self, pos: AbsPosition, is_vertical: bool) -> NavigationCommand {
         let new_cursor_pos = self.within_text(pos, is_vertical);
-        let new_scroll_pos = self.scroll_into_view(new_cursor_pos);
-
-        (self.scroll_cmd(new_scroll_pos), self.move_cmd(new_cursor_pos, is_vertical))
+        self.move_cmd(new_cursor_pos, is_vertical)
     }
 
     fn within_text(&self, (x, y): AbsPosition, is_vertical: bool) -> AbsPosition {
@@ -26,7 +25,7 @@ impl EditorState {
         (new_x, new_y)
     }
 
-    fn scroll_into_view(&self, (x, y): AbsPosition) -> AbsPosition {
+    pub fn scroll_into_view(&self, (x, y): AbsPosition) -> ScrollCommand {
         let Viewport { left, top, width, height } = self.viewport;
 
         let scroll_into = |cursor_pos, viewport_start, viewport_size| {
@@ -35,14 +34,14 @@ impl EditorState {
             else { viewport_start }
         };
 
-        (scroll_into(x, left, width), scroll_into(y, top, height))
+        self.scroll_cmd((scroll_into(x, left, width), scroll_into(y, top, height)))
     }
 
-    fn move_cmd(&self, new_pos @ (x, y): AbsPosition, is_vertical: bool) -> Option<MoveCursorTo> {
+    fn move_cmd(&self, new_pos @ (x, y): AbsPosition, is_vertical: bool) -> NavigationCommand {
         if new_pos == self.cursor_pos { None } else { Some(MoveCursorTo(x, y, is_vertical)) }
     }
 
-    fn scroll_cmd(&self, new_pos @ (x, y): AbsPosition) -> Option<ScrollViewportTo> {
+    fn scroll_cmd(&self, new_pos @ (x, y): AbsPosition) -> ScrollCommand {
         if new_pos == self.viewport.pos() { None } else { Some(ScrollViewportTo(x, y)) }
     }
 
@@ -124,20 +123,20 @@ impl EditorState {
         self.content.lines.len() - 1
     }
 
-    pub fn scroll_to(&self, (scroll_left, scroll_top): AbsPosition) -> NavigationCommand {
+    pub fn scroll_to(&self, (scroll_left, scroll_top): AbsPosition) -> ScrollCommand {
         let new_scroll_top = min(scroll_top, self.last_line_y());
-        (self.scroll_cmd((scroll_left, new_scroll_top)), None)
+        self.scroll_cmd((scroll_left, new_scroll_top))
     }
 
-    pub fn scroll_up(&self, n: usize) -> NavigationCommand {
+    pub fn scroll_up(&self, n: usize) -> ScrollCommand {
         self.scroll_vertical(|y| y - min(n, y))
     }
 
-    pub fn scroll_down(&self, n: usize) -> NavigationCommand {
+    pub fn scroll_down(&self, n: usize) -> ScrollCommand {
         self.scroll_vertical(|y| y + min(n, self.last_line_y() - y))
     }
 
-    fn scroll_vertical<F>(&self, new: F) -> NavigationCommand
+    fn scroll_vertical<F>(&self, new: F) -> ScrollCommand
     where
         F: Fn(usize) -> usize,
     {

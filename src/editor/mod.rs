@@ -9,7 +9,7 @@ use std::io;
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, navigation::{MoveCursorTo, NavigationCommand, ScrollViewportTo},
+    content::EditorContent, navigation::{MoveCursorTo, NavigationCommand, ScrollCommand, ScrollViewportTo},
     renderer::EditorRenderer,
     state::{EditorState, ViewportDimensions}
 };
@@ -43,7 +43,7 @@ impl Editor {
         loop {
             let event = read_event()?;
 
-            let command = match event {
+            let cursor_command = match event {
                 Key(ref key, modifiers) => match (key, modifiers) {
                     (Esc, 0) => break Ok(()),
                     (Home, 0) => self.state.move_line_start(),
@@ -55,23 +55,26 @@ impl Editor {
                     (PageDown, 0) => self.state.move_page_down(),
                     (PageUp, 0) => self.state.move_page_up(),
 
-                    (Up, CTRL) => self.state.scroll_up(1),
-                    (Down, CTRL) => self.state.scroll_down(1),
                     (Home, CTRL) => self.state.move_document_start(),
                     (End, CTRL) => self.state.move_document_end(),
 
-                    _ => (None, None)
+                    _ => None
                 },
-                Mouse(ref mouse) => match mouse {
-                    Button(MouseButton::Left, Press, column, row) => self.state.click(self.state.viewport.to_absolute((*column, *row))),
-                    WheelUp(_, _) => self.state.scroll_up(1),
-                    WheelDown(_, _) => self.state.scroll_down(1),
-                    _ => (None, None)
-                },
-                _ => (None, None)
+                Mouse(Button(MouseButton::Left, Press, column, row)) => self.state.click(self.state.viewport.to_absolute((column, row))),
+                _ => None
             };
 
-            self.queue(command);
+            let scroll_command = if let Some(MoveCursorTo(x, y, _)) = cursor_command {
+                self.state.scroll_into_view((x, y))
+            } else {
+                match event {
+                    Key(Up, CTRL) | Mouse(WheelUp(_, _)) => self.state.scroll_up(1),
+                    Key(Down, CTRL) | Mouse(WheelDown(_, _)) => self.state.scroll_down(1),
+                    _ => None
+                }
+            };
+
+            self.queue((scroll_command, cursor_command));
 
             match event {
                 Key(ref key, _) => match key {
@@ -91,7 +94,7 @@ impl Editor {
     }
 
 
-    fn queue(&mut self, (scroll_cmd, cursor_cmd): NavigationCommand) {
+    fn queue(&mut self, (scroll_cmd, cursor_cmd): (ScrollCommand, NavigationCommand)) {
         if let Some(ScrollViewportTo(left, top)) = scroll_cmd {
             self.state.scroll_viewport(left, top);
             self.renderer.refresh(&self.state);
@@ -118,12 +121,12 @@ impl Editor {
 
     fn insert(&mut self, str: &str) {
         let new_cursor_pos = self.state.content.insert(self.state.cursor_pos, str);
-        self.queue(self.state.click(new_cursor_pos));
+        self.move_and_scroll(self.state.click(new_cursor_pos));
         self.renderer.refresh(&self.state);
     }
 
     fn delete_char(&mut self) {
-        if let (_, Some(MoveCursorTo(right_col, right_row, _))) = self.state.move_right() {
+         if let Some(MoveCursorTo(right_col, right_row, _)) = self.state.move_right() {
             let (left_col, left_row) = self.state.cursor_pos;
             self.state.content.delete((left_row, left_col), (right_row, right_col));
             self.renderer.refresh(&self.state);
@@ -132,7 +135,11 @@ impl Editor {
 
     fn backspace(&mut self) {
         if self.state.cursor_pos == (0, 0) { return }
-        self.queue(self.state.move_left());
+        self.move_and_scroll(self.state.move_left());
         self.delete_char();
+    }
+
+    fn move_and_scroll(&mut self, cursor_command: NavigationCommand) {
+        self.queue((self.state.scroll_into_view(self.state.cursor_pos), cursor_command));
     }
 }

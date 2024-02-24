@@ -5,7 +5,11 @@ macro_rules! test_nav {
         fn $test_name() {
             let test_case = parse_test_case(vec![$($line),*]);
 
-            let (scroll_command, cursor_command) = test_case.editor_state.$action($($args),*);
+            let cursor_command = test_case.editor_state.$action($($args),*);
+            let scroll_command = match cursor_command {
+                Some(MoveCursorTo(x, y, _)) => test_case.editor_state.scroll_into_view((x, y)),
+                _ => None
+            };
 
             assert_eq!(cursor_command, test_case.expected_cursor);
             assert_eq!(scroll_command, test_case.expected_scroll);
