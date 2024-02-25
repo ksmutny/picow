@@ -2,7 +2,6 @@ pub mod content;
 pub mod cursor;
 pub mod state;
 // pub mod events;
-pub mod navigation;
 pub mod scroll;
 pub mod renderer;
 
@@ -11,9 +10,7 @@ use std::io;
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, cursor::Cursor, navigation::NavigationCommand, scroll::{ScrollCommand, ScrollViewportTo},
-    renderer::EditorRenderer,
-    state::{EditorState, ViewportDimensions}
+    content::EditorContent, cursor::{Cursor, NavigationCommand}, renderer::EditorRenderer, scroll::{ScrollCommand, ScrollViewportTo}, state::{EditorState, ViewportDimensions}
 };
 
 
