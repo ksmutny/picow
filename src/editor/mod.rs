@@ -42,25 +42,26 @@ impl Editor {
     fn event_loop(&mut self) -> io::Result<()> {
         loop {
             let event = read_event()?;
+            let EditorState { ref cursor, ref content, ref viewport, .. } = self.state;
 
             let cursor_command = match event {
                 Key(ref key, modifiers) => match (key, modifiers) {
                     (Esc, 0) => break Ok(()),
-                    (Home, 0) => self.state.move_line_start(),
-                    (End, 0) => self.state.move_line_end(),
-                    (Up, 0) => self.state.move_up(1),
-                    (Down, 0) => self.state.move_down(1),
-                    (Right, 0) => self.state.move_right(),
-                    (Left, 0) => self.state.move_left(),
-                    (PageDown, 0) => self.state.move_down(self.state.viewport.height as usize - 1),
-                    (PageUp, 0) => self.state.move_up(self.state.viewport.height as usize - 1),
+                    (Home, 0) => cursor.move_line_start(content),
+                    (End, 0) => cursor.move_line_end(content),
+                    (Up, 0) => cursor.move_up(content, 1),
+                    (Down, 0) => cursor.move_down(content, 1),
+                    (Right, 0) => cursor.move_right(content),
+                    (Left, 0) => cursor.move_left(content),
+                    (PageDown, 0) => cursor.move_down(content, viewport.height as usize - 1),
+                    (PageUp, 0) => cursor.move_up(content, viewport.height as usize - 1),
 
-                    (Home, CTRL) => self.state.move_document_start(),
-                    (End, CTRL) => self.state.move_document_end(),
+                    (Home, CTRL) => cursor.move_document_start(content),
+                    (End, CTRL) => cursor.move_document_end(content),
 
                     _ => None
                 },
-                Mouse(Button(MouseButton::Left, Press, column, row)) => self.state.click(self.state.viewport.to_absolute((column, row))),
+                Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.click(content, viewport.to_absolute((column, row))),
                 _ => None
             };
 
@@ -116,12 +117,12 @@ impl Editor {
     fn insert(&mut self, str: &str) {
         let (col, row) = self.state.cursor.pos();
         let (new_row, new_col) = self.state.content.insert((row, col), str);
-        self.move_and_scroll(self.state.click((new_col, new_row)));
+        self.move_and_scroll(self.state.cursor.click(&self.state.content, (new_col, new_row)));
         self.renderer.refresh(&self.state);
     }
 
     fn delete_char(&mut self) {
-         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.move_right() {
+         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
             let (left_col, left_row) = self.state.cursor.pos();
             self.state.content.delete((left_row, left_col), (right_row, right_col));
             self.renderer.refresh(&self.state);
@@ -130,7 +131,7 @@ impl Editor {
 
     fn backspace(&mut self) {
         if self.state.cursor.is_at(0, 0) { return }
-        self.move_and_scroll(self.state.move_left());
+        self.move_and_scroll(self.state.cursor.move_left(&self.state.content));
         self.delete_char();
     }
 
