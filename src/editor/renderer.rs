@@ -54,9 +54,9 @@ impl EditorRenderer {
     }
 
     pub fn refresh_cursor(&mut self, state: &EditorState) {
-        let (x_abs, y_abs) = state.cursor_pos;
+        let (x_abs, y_abs) = state.cursor.pos();
 
-        if !state.viewport.cursor_within(state.cursor_pos) {
+        if !state.viewport.cursor_within(state.cursor.pos()) {
             self.hide_cursor();
         } else {
             self.show_cursor()
@@ -82,7 +82,7 @@ impl EditorRenderer {
 
     pub fn refresh_status_bar(&mut self, state: &EditorState) {
         let Viewport { top, width, height, .. } = state.viewport;
-        let (x, y) = state.cursor_pos;
+        let (x, y) = state.cursor.pos();
 
         let status = format!("{}x{} | {} {} | {} | {}", width, height, x + 1, y + 1, top + 1, self.delimiter_label(&state.content.delimiter));
 

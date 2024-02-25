@@ -1,4 +1,5 @@
 pub mod content;
+mod cursor;
 pub mod state;
 // pub mod events;
 pub mod navigation;
@@ -10,7 +11,7 @@ use std::io;
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, navigation::{MoveCursorTo, NavigationCommand}, scroll::{ScrollCommand, ScrollViewportTo},
+    content::EditorContent, cursor::Cursor, navigation::{MoveCursorTo, NavigationCommand}, scroll::{ScrollCommand, ScrollViewportTo},
     renderer::EditorRenderer,
     state::{EditorState, ViewportDimensions}
 };
@@ -98,14 +99,14 @@ impl Editor {
             self.state.scroll_viewport(left, top);
             self.renderer.refresh(&self.state);
         }
-        if let Some(MoveCursorTo(x, y, is_vertical)) = cursor_cmd {
-            if is_vertical {
-                self.state.start_or_keep_vertical_navigation()
-            }
-            else {
-                self.state.end_vertical_navigation()
-            }
-            self.state.cursor_pos = (x, y);
+        if let Some(MoveCursorTo(col, row, is_vertical)) = cursor_cmd {
+            // TODO should be handled by Cursor navigation methods (after moved from EditorState to Cursor)
+            self.state.cursor = Cursor { row, col,
+                moved_vertically: is_vertical,
+                last_col: if is_vertical {
+                    if self.state.cursor.moved_vertically { self.state.cursor.last_col } else { self.state.cursor.col }
+                } else { col }
+            };
         }
     }
 
@@ -119,7 +120,7 @@ impl Editor {
     }
 
     fn insert(&mut self, str: &str) {
-        let (col, row) = self.state.cursor_pos;
+        let (col, row) = self.state.cursor.pos();
         let (new_row, new_col) = self.state.content.insert((row, col), str);
         self.move_and_scroll(self.state.click((new_col, new_row)));
         self.renderer.refresh(&self.state);
@@ -127,19 +128,19 @@ impl Editor {
 
     fn delete_char(&mut self) {
          if let Some(MoveCursorTo(right_col, right_row, _)) = self.state.move_right() {
-            let (left_col, left_row) = self.state.cursor_pos;
+            let (left_col, left_row) = self.state.cursor.pos();
             self.state.content.delete((left_row, left_col), (right_row, right_col));
             self.renderer.refresh(&self.state);
         }
     }
 
     fn backspace(&mut self) {
-        if self.state.cursor_pos == (0, 0) { return }
+        if self.state.cursor.is_at(0, 0) { return }
         self.move_and_scroll(self.state.move_left());
         self.delete_char();
     }
 
     fn move_and_scroll(&mut self, cursor_command: NavigationCommand) {
-        self.queue((self.state.scroll_into_view(self.state.cursor_pos), cursor_command));
+        self.queue((self.state.scroll_into_view(self.state.cursor.pos()), cursor_command));
     }
 }

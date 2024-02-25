@@ -114,7 +114,7 @@ fn move_cursor_no_scroll() {
 
     let state = tc.editor_state;
     assert_eq!(state.viewport.size(), (13, 4));
-    assert_eq!(state.cursor_pos, (6, 1));
+    assert_eq!(state.cursor.pos(), (6, 1));
     assert_eq!(state.viewport.pos(), (0, 0));
     assert_eq!(state.content.lines, vec![
         "______ ______",
@@ -138,7 +138,7 @@ fn no_move_cursor() {
     ]);
 
     let state = tc.editor_state;
-    assert_eq!(state.cursor_pos, (6, 1));
+    assert_eq!(state.cursor.pos(), (6, 1));
     assert_eq!(tc.expected_cursor, None);
 }
 
@@ -154,7 +154,7 @@ fn cursor_top_left() {
     ]);
 
     let state = tc.editor_state;
-    assert_eq!(state.cursor_pos, (0, 1));
+    assert_eq!(state.cursor.pos(), (0, 1));
 }
 
 #[test]
@@ -171,7 +171,7 @@ fn move_cursor_and_scroll() {
 
     let state = tc.editor_state;
     assert_eq!(state.viewport.size(), (13, 4));
-    assert_eq!(state.cursor_pos, (16, 3));
+    assert_eq!(state.cursor.pos(), (16, 3));
     assert_eq!(state.viewport.pos(), (10, 2));
     assert_eq!(state.content.lines, vec![
         "_________ ______ ___",
@@ -199,7 +199,7 @@ fn document_start() {
 
     let state = tc.editor_state;
     assert_eq!(state.viewport.size(), (13, 4));
-    assert_eq!(state.cursor_pos, (8, 3));
+    assert_eq!(state.cursor.pos(), (8, 3));
     assert_eq!(state.viewport.pos(), (1, 1));
     assert_eq!(state.content.lines, vec![
         " _____________",
@@ -229,7 +229,7 @@ fn eol() {
         " ______",
         "_____________",
     ]);
-    assert_eq!(state.cursor_pos, (7, 1));
+    assert_eq!(state.cursor.pos(), (7, 1));
 }
 
 #[test]

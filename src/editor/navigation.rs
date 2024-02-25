@@ -16,12 +16,12 @@ impl EditorState {
 
     fn within_text(&self, (x, y): AbsPosition, is_vertical: bool) -> AbsPosition {
         let new_y = min(y, self.content.last_line_y());
-        let new_x = min(if is_vertical { self.vertical_navigation_x() } else { x }, self.content.line_len(new_y));
+        let new_x = min(if is_vertical && self.cursor.moved_vertically { self.cursor.last_col } else { x }, self.content.line_len(new_y));
         (new_x, new_y)
     }
 
     fn move_cmd(&self, new_pos @ (x, y): AbsPosition, is_vertical: bool) -> NavigationCommand {
-        if new_pos == self.cursor_pos { None } else { Some(MoveCursorTo(x, y, is_vertical)) }
+        if new_pos == self.cursor.pos() { None } else { Some(MoveCursorTo(x, y, is_vertical)) }
     }
 
     pub fn move_up(&self, n: usize) -> NavigationCommand {
@@ -44,12 +44,12 @@ impl EditorState {
     where
         F: Fn(usize) -> usize,
     {
-        let (x, y) = self.cursor_pos;
+        let (x, y) = self.cursor.pos();
         self.move_to((x, new(y)), true)
     }
 
     pub fn move_left(&self) -> NavigationCommand {
-        let move_to = match self.cursor_pos {
+        let move_to = match self.cursor.pos() {
             (0, 0) => (0, 0),
             (0, y) => self.content.line_end(y - 1),
             (x, y) => (x - 1, y)
@@ -58,10 +58,10 @@ impl EditorState {
     }
 
     pub fn move_right(&self) -> NavigationCommand {
-        let move_to = match self.cursor_pos {
+        let move_to = match self.cursor.pos() {
             (x, y) if x < self.content.line_len(y) => (x + 1, y),
             (_, y) if y < self.content.last_line_y() => (0, y + 1),
-            _ => self.cursor_pos
+            _ => self.cursor.pos()
         };
         self.move_to(move_to, false)
     }

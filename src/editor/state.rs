@@ -1,4 +1,4 @@
-use super::content::EditorContent;
+use super::{content::EditorContent, cursor::Cursor};
 
 pub type CursorPosition = (u16, u16);
 pub type ViewportDimensions = (u16, u16);
@@ -8,8 +8,7 @@ pub type AbsPosition = (usize, usize);
 pub struct EditorState {
     pub content: EditorContent,
     pub viewport: Viewport,
-    pub cursor_pos: AbsPosition,
-    vertical_nav: VerticalNavigation,
+    pub cursor: Cursor,
 }
 
 pub struct Viewport {
@@ -41,16 +40,12 @@ impl Viewport {
     }
 }
 
-struct VerticalNavigation {
-    in_progress: bool,
-    last_x: usize,
-}
-
 impl EditorState {
 
     pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: AbsPosition) -> Self {
-        let vertical_nav = VerticalNavigation { in_progress: false, last_x: 0 };
-        Self { content, viewport, cursor_pos, vertical_nav }
+        let (col, row) = cursor_pos;
+        let cursor = Cursor::new(row, col);
+        Self { content, viewport, cursor }
     }
 
     pub fn scroll_viewport(&mut self, x: usize, y: usize) {
@@ -63,21 +58,6 @@ impl EditorState {
         self.viewport.height = height - 1;
     }
 
-    pub fn cursor_x(&self) -> usize { self.cursor_pos.0 }
-    pub fn cursor_y(&self) -> usize { self.cursor_pos.1 }
-
-    pub fn start_or_keep_vertical_navigation(&mut self) {
-        if !self.vertical_nav.in_progress {
-            self.vertical_nav.in_progress = true;
-            self.vertical_nav.last_x = self.cursor_x();
-        }
-    }
-
-    pub fn end_vertical_navigation(&mut self) {
-        self.vertical_nav.in_progress = false;
-    }
-
-    pub fn vertical_navigation_x(&self) -> usize {
-        self.vertical_nav.last_x
-    }
+    pub fn cursor_x(&self) -> usize { self.cursor.col }
+    pub fn cursor_y(&self) -> usize { self.cursor.row }
 }
