@@ -32,11 +32,11 @@ impl Cursor {
     }
 
     fn move_to_from(&self, content: &EditorContent, (x, y): AbsPosition, furthest_col: Option<usize>) -> NavigationCommand {
-        let new_cursor_pos = self.within_text(content, (x, y));
+        let new_cursor_pos = Self::within_text(content, (x, y));
         self.move_cmd(new_cursor_pos, furthest_col)
     }
 
-    fn within_text(&self, content: &EditorContent, (x, y): AbsPosition) -> AbsPosition {
+    fn within_text(content: &EditorContent, (x, y): AbsPosition) -> AbsPosition {
         let new_y = min(y, content.last_line_y());
         let new_x = min(x, content.line_len(new_y));
         (new_x, new_y)
