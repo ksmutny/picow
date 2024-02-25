@@ -1,27 +1,31 @@
 use std::cmp::min;
 
-use super::state::{AbsPosition, EditorState};
+use super::{cursor::Cursor, state::{AbsPosition, EditorState}};
 
 
-#[derive(PartialEq, Debug)]
-pub struct MoveCursorTo(pub usize, pub usize, pub bool);
-pub type NavigationCommand = Option<MoveCursorTo>;
+pub type NavigationCommand = Option<Cursor>;
 
 impl EditorState {
 
-    fn move_to(&self, pos: AbsPosition, is_vertical: bool) -> NavigationCommand {
-        let new_cursor_pos = self.within_text(pos, is_vertical);
-        self.move_cmd(new_cursor_pos, is_vertical)
+    fn move_to(&self, (x, y): AbsPosition, is_vertical: bool) -> NavigationCommand {
+        let (new_x, new_last_x) = match (is_vertical, self.cursor.moved_vertically) {
+            (true, true) => (self.cursor.last_col, self.cursor.last_col),
+            (true, false) => (self.cursor.col, self.cursor.last_col),
+            (false, _) => (x, x)
+        };
+
+        let new_cursor_pos = self.within_text((new_x, y));
+        self.move_cmd(new_cursor_pos, is_vertical, new_last_x)
     }
 
-    fn within_text(&self, (x, y): AbsPosition, is_vertical: bool) -> AbsPosition {
+    fn within_text(&self, (x, y): AbsPosition) -> AbsPosition {
         let new_y = min(y, self.content.last_line_y());
-        let new_x = min(if is_vertical && self.cursor.moved_vertically { self.cursor.last_col } else { x }, self.content.line_len(new_y));
+        let new_x = min(x, self.content.line_len(new_y));
         (new_x, new_y)
     }
 
-    fn move_cmd(&self, new_pos @ (x, y): AbsPosition, is_vertical: bool) -> NavigationCommand {
-        if new_pos == self.cursor.pos() { None } else { Some(MoveCursorTo(x, y, is_vertical)) }
+    fn move_cmd(&self, new_pos @ (x, y): AbsPosition, is_vertical: bool, last_x: usize) -> NavigationCommand {
+        if new_pos == self.cursor.pos() { None } else { Some(Cursor { row: y, col: x, moved_vertically: is_vertical, last_col: last_x } ) }
     }
 
     pub fn move_up(&self, n: usize) -> NavigationCommand {

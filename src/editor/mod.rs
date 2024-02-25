@@ -1,5 +1,5 @@
 pub mod content;
-mod cursor;
+pub mod cursor;
 pub mod state;
 // pub mod events;
 pub mod navigation;
@@ -11,7 +11,7 @@ use std::io;
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, cursor::Cursor, navigation::{MoveCursorTo, NavigationCommand}, scroll::{ScrollCommand, ScrollViewportTo},
+    content::EditorContent, cursor::Cursor, navigation::NavigationCommand, scroll::{ScrollCommand, ScrollViewportTo},
     renderer::EditorRenderer,
     state::{EditorState, ViewportDimensions}
 };
@@ -64,7 +64,7 @@ impl Editor {
                 _ => None
             };
 
-            let scroll_command = if let Some(MoveCursorTo(x, y, _)) = cursor_command {
+            let scroll_command = if let Some(Cursor { col: x, row: y, .. }) = cursor_command {
                 self.state.scroll_into_view((x, y))
             } else {
                 match event {
@@ -99,14 +99,8 @@ impl Editor {
             self.state.scroll_viewport(left, top);
             self.renderer.refresh(&self.state);
         }
-        if let Some(MoveCursorTo(col, row, is_vertical)) = cursor_cmd {
-            // TODO should be handled by Cursor navigation methods (after moved from EditorState to Cursor)
-            self.state.cursor = Cursor { row, col,
-                moved_vertically: is_vertical,
-                last_col: if is_vertical {
-                    if self.state.cursor.moved_vertically { self.state.cursor.last_col } else { self.state.cursor.col }
-                } else { col }
-            };
+        if let Some(cursor) = cursor_cmd {
+            self.state.cursor = cursor;
         }
     }
 
@@ -127,7 +121,7 @@ impl Editor {
     }
 
     fn delete_char(&mut self) {
-         if let Some(MoveCursorTo(right_col, right_row, _)) = self.state.move_right() {
+         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.move_right() {
             let (left_col, left_row) = self.state.cursor.pos();
             self.state.content.delete((left_row, left_col), (right_row, right_col));
             self.renderer.refresh(&self.state);

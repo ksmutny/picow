@@ -1,3 +1,4 @@
+#[derive(PartialEq, Debug)]
 pub struct Cursor {
     pub row: usize,
     pub col: usize,
@@ -5,6 +6,7 @@ pub struct Cursor {
     pub moved_vertically: bool,
     pub last_col: usize
 }
+
 
 impl Cursor {
     pub fn new(row: usize, col: usize) -> Self {

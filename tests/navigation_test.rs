@@ -6,7 +6,7 @@ mod navigation_macros;
 mod parse_editor;
 
 mod move_up {
-    use picow::editor::navigation::MoveCursorTo;
+    use picow::editor::cursor::Cursor;
     use super::parse_editor::parse_test_case;
 
     test_nav!(
@@ -55,7 +55,7 @@ mod move_up {
 
 
 mod move_down {
-    use picow::editor::navigation::MoveCursorTo;
+    use picow::editor::cursor::Cursor;
     use super::parse_editor::parse_test_case;
 
     test_nav!(
@@ -114,7 +114,7 @@ mod move_down {
 }
 
 mod document_start_end {
-    use picow::editor::navigation::MoveCursorTo;
+    use picow::editor::cursor::Cursor;
     use super::parse_editor::parse_test_case;
 
     test_nav!(
@@ -147,7 +147,7 @@ mod document_start_end {
 }
 
 mod move_horizoval {
-    use picow::editor::navigation::MoveCursorTo;
+    use picow::editor::cursor::Cursor;
     use super::parse_editor::parse_test_case;
 
     test_nav!(

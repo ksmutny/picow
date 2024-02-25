@@ -1,10 +1,10 @@
 use picow::editor::{
-    content::EditorContent, navigation::MoveCursorTo, scroll::ScrollViewportTo, state::{AbsPosition, EditorState, Viewport, ViewportDimensions}
+    content::EditorContent, cursor::Cursor, scroll::ScrollViewportTo, state::{AbsPosition, EditorState, Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {
     pub editor_state: EditorState,
-    pub expected_cursor: Option<MoveCursorTo>,
+    pub expected_cursor: Option<Cursor>,
     pub expected_scroll: Option<ScrollViewportTo>,
 }
 
@@ -93,7 +93,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             Viewport::new(left, top, width, height),
             cursor_pos
         ),
-        expected_cursor: expected_cursor.map(|(x, y)| MoveCursorTo(x, y, expected_cursor_vertical)),
+        expected_cursor: expected_cursor.map(|(x, y)| Cursor { col: x, row: y, moved_vertically: expected_cursor_vertical, last_col: 0 }),
         expected_scroll: expected_scroll.map(|(left, top)| ScrollViewportTo(left, top))
     }
 }
@@ -123,7 +123,7 @@ fn move_cursor_no_scroll() {
         "_____________"
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(6, 0, false)));
+    assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 6)));
     assert_eq!(tc.expected_scroll, None);
 }
 
@@ -182,7 +182,7 @@ fn move_cursor_and_scroll() {
         "_________ _____________"  // 4
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(16, 0, true)));
+    assert_eq!(tc.expected_cursor, Some(Cursor { col: 16, row: 0, moved_vertically: true, last_col: 0 }));
     assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(10, 0)));
 }
 
@@ -209,7 +209,7 @@ fn document_start() {
         "______________"
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(MoveCursorTo(0, 0, false)));
+    assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 0)));
     assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(0, 0)));
 }
 
