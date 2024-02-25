@@ -119,8 +119,9 @@ impl Editor {
     }
 
     fn insert(&mut self, str: &str) {
-        let new_cursor_pos = self.state.content.insert(self.state.cursor_pos, str);
-        self.move_and_scroll(self.state.click(new_cursor_pos));
+        let (col, row) = self.state.cursor_pos;
+        let (new_row, new_col) = self.state.content.insert((row, col), str);
+        self.move_and_scroll(self.state.click((new_col, new_row)));
         self.renderer.refresh(&self.state);
     }
 
