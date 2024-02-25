@@ -7,9 +7,8 @@ use super::{content::EditorContent, state::AbsPosition};
 pub struct Cursor {
     pub row: usize,
     pub col: usize,
-    // TODO make private after moving navigation methods to Cursor
-    pub moved_vertically: bool,
-    pub last_col: usize
+    moved_vertically: bool,
+    last_col: usize
 }
 
 pub type NavigationCommand = Option<Cursor>;

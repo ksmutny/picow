@@ -17,7 +17,6 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let mut scroll_pos: AbsPosition = (0, 0);
     let mut scroll_pos_identified = false;
     let mut expected_cursor = None;
-    let mut expected_cursor_vertical = false;
     let mut expected_scroll = None;
 
     for (i, line) in input.iter().enumerate() {
@@ -52,11 +51,10 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             expected_scroll = Some((exp_scroll_left, exp_scroll_top));
         }
 
-        if line.contains('▯') || line.contains('△') {
-            let exp_cursor_x_abs = if line.contains('▯') { pos(line, '▯') } else { pos(line, '△') };
+        if line.contains('▯') || line.contains('▯') {
+            let exp_cursor_x_abs = if line.contains('▯') { pos(line, '▯') } else { pos(line, '▯') };
             let exp_cursor_y_abs = i;
             expected_cursor = Some((exp_cursor_x_abs, exp_cursor_y_abs));
-            expected_cursor_vertical = line.contains('△');
 
             if expected_scroll == None && !scroll_pos_identified {
                 expected_scroll = Some((exp_cursor_x_abs, exp_cursor_y_abs));
@@ -70,7 +68,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         if !eof_reached {
             let processed_line = line
                 .replace(['▮', '┘'], if line.contains('.') || line.contains('☼') { " " } else { "_" } )
-                .replace(['│', '▯', '△'], " ")
+                .replace(['│', '▯', '▯'], " ")
                 .replace(['┌', '─', '┐', '└', '╔', '▮', '.', '☼'], "_")
                 .trim_end()
                 .to_string();
@@ -93,7 +91,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             Viewport::new(left, top, width, height),
             cursor_pos
         ),
-        expected_cursor: expected_cursor.map(|(x, y)| Cursor { col: x, row: y, moved_vertically: expected_cursor_vertical, last_col: 0 }),
+        expected_cursor: expected_cursor.map(|(col, row)| Cursor::new(row, col)),
         expected_scroll: expected_scroll.map(|(left, top)| ScrollViewportTo(left, top))
     }
 }
@@ -161,7 +159,7 @@ fn cursor_top_left() {
 fn move_cursor_and_scroll() {
     let tc = parse_test_case(vec![
     //   012345678901234567890123
-        "_________ ╔_____△___   ",          // 0
+        "_________ ╔_____▯___   ",          // 0
         "_________ __________________",     // 1
         "_________ ┌───────────┐",          // 2
         "_________ │_____▮     │",          // 3
@@ -182,7 +180,7 @@ fn move_cursor_and_scroll() {
         "_________ _____________"  // 4
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(Cursor { col: 16, row: 0, moved_vertically: true, last_col: 0 }));
+    assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 16)));
     assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(10, 0)));
 }
 
