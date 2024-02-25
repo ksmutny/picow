@@ -31,27 +31,27 @@ impl Cursor {
         self.move_to_from(content, pos, None)
     }
 
-    fn move_to_from(&self, content: &EditorContent, (x, y): AbsPosition, furthest_col: Option<usize>) -> NavigationCommand {
-        let new_cursor_pos = Self::within_text(content, (x, y));
+    fn move_to_from(&self, content: &EditorContent, (col, row): AbsPosition, furthest_col: Option<usize>) -> NavigationCommand {
+        let new_cursor_pos = Self::within_text(content, (col, row));
         self.move_cmd(new_cursor_pos, furthest_col)
     }
 
-    fn within_text(content: &EditorContent, (x, y): AbsPosition) -> AbsPosition {
-        let new_y = min(y, content.last_line_y());
-        let new_x = min(x, content.line_len(new_y));
-        (new_x, new_y)
+    fn within_text(content: &EditorContent, (col, row): AbsPosition) -> AbsPosition {
+        let new_row = min(row, content.last_line_y());
+        let new_col = min(col, content.line_len(new_row));
+        (new_col, new_row)
     }
 
-    fn move_cmd(&self, new_pos @ (x, y): AbsPosition, furthest_col: Option<usize>) -> NavigationCommand {
-        if new_pos == self.pos() { None } else { Some(Cursor { row: y, col: x, furthest_col } ) }
+    fn move_cmd(&self, (col, row): AbsPosition, furthest_col: Option<usize>) -> NavigationCommand {
+        if self.is_at(row, col) { None } else { Some(Cursor { row, col, furthest_col } ) }
     }
 
     pub fn move_up(&self, content: &EditorContent, n: usize) -> NavigationCommand {
-        self.move_vertical(content, |y| y - min(n, y))
+        self.move_vertical(content, |row| row - min(n, row))
     }
 
     pub fn move_down(&self, content: &EditorContent, n: usize) -> NavigationCommand {
-        self.move_vertical(content, |y| y + min(n, content.last_line_y() - y))
+        self.move_vertical(content, |row| row + min(n, content.last_line_y() - row))
     }
 
     fn move_vertical<F>(&self, content: &EditorContent, new: F) -> NavigationCommand
@@ -65,16 +65,16 @@ impl Cursor {
     pub fn move_left(&self, content: &EditorContent) -> NavigationCommand {
         let move_to = match self.pos() {
             (0, 0) => (0, 0),
-            (0, y) => content.line_end(y - 1),
-            (x, y) => (x - 1, y)
+            (0, row) => content.line_end(row - 1),
+            (col, row) => (col - 1, row)
         };
         self.move_to(content, move_to)
     }
 
     pub fn move_right(&self, content: &EditorContent) -> NavigationCommand {
         let move_to = match self.pos() {
-            (x, y) if x < content.line_len(y) => (x + 1, y),
-            (_, y) if y < content.last_line_y() => (0, y + 1),
+            (col, row) if col < content.line_len(row) => (col + 1, row),
+            (_, row) if row < content.last_line_y() => (0, row + 1),
             _ => self.pos()
         };
         self.move_to(content, move_to)
