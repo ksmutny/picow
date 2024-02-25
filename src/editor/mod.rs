@@ -52,8 +52,8 @@ impl Editor {
                     (Down, 0) => self.state.move_down(1),
                     (Right, 0) => self.state.move_right(),
                     (Left, 0) => self.state.move_left(),
-                    (PageDown, 0) => self.state.move_page_down(),
-                    (PageUp, 0) => self.state.move_page_up(),
+                    (PageDown, 0) => self.state.move_down(self.state.viewport.height as usize - 1),
+                    (PageUp, 0) => self.state.move_up(self.state.viewport.height as usize - 1),
 
                     (Home, CTRL) => self.state.move_document_start(),
                     (End, CTRL) => self.state.move_document_end(),
