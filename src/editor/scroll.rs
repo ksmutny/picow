@@ -22,7 +22,7 @@ impl EditorState {
     }
 
     pub fn scroll_to(&self, (scroll_left, scroll_top): AbsPosition) -> ScrollCommand {
-        let new_scroll_top = min(scroll_top, self.content.last_line_y());
+        let new_scroll_top = min(scroll_top, self.content.last_line_row());
         self.scroll_cmd((scroll_left, new_scroll_top))
     }
 
@@ -35,7 +35,7 @@ impl EditorState {
     }
 
     pub fn scroll_down(&self, n: usize) -> ScrollCommand {
-        self.scroll_vertical(|y| y + min(n, self.content.last_line_y() - y))
+        self.scroll_vertical(|y| y + min(n, self.content.last_line_row() - y))
     }
 
     fn scroll_vertical<F>(&self, new: F) -> ScrollCommand

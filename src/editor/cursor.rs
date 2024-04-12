@@ -37,7 +37,7 @@ impl Cursor {
     }
 
     fn within_text(content: &EditorContent, (col, row): AbsPosition) -> AbsPosition {
-        let new_row = min(row, content.last_line_y());
+        let new_row = min(row, content.last_line_row());
         let new_col = min(col, content.line_len(new_row));
         (new_col, new_row)
     }
@@ -51,7 +51,7 @@ impl Cursor {
     }
 
     pub fn move_down(&self, content: &EditorContent, n: usize) -> NavigationCommand {
-        self.move_vertical(content, |row| row + min(n, content.last_line_y() - row))
+        self.move_vertical(content, |row| row + min(n, content.last_line_row() - row))
     }
 
     fn move_vertical<F>(&self, content: &EditorContent, new: F) -> NavigationCommand
@@ -74,7 +74,7 @@ impl Cursor {
     pub fn move_right(&self, content: &EditorContent) -> NavigationCommand {
         let move_to = match self.pos() {
             (col, row) if col < content.line_len(row) => (col + 1, row),
-            (_, row) if row < content.last_line_y() => (0, row + 1),
+            (_, row) if row < content.last_line_row() => (0, row + 1),
             _ => self.pos()
         };
         self.move_to(content, move_to)

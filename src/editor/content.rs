@@ -24,10 +24,10 @@ impl EditorContent {
     }
 
     pub fn last_line_end(&self) -> AbsPosition {
-        self.line_end(self.last_line_y())
+        self.line_end(self.last_line_row())
     }
 
-    pub fn last_line_y(&self) -> usize {
+    pub fn last_line_row(&self) -> usize {
         self.lines.len() - 1
     }
 
