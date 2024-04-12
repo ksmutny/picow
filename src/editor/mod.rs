@@ -1,5 +1,6 @@
 pub mod content;
 pub mod cursor;
+pub mod edit;
 pub mod state;
 // pub mod events;
 pub mod scroll;
