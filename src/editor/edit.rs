@@ -15,7 +15,7 @@ pub enum EditOperation {
 }
 
 impl Edit {
-    fn to(&self) -> AbsPosition {
+    pub fn to(&self) -> AbsPosition {
         let (from_row, from_col) = self.from;
         let to_col_offset = if self.lines.len() == 1 { from_col } else { 0 };
         (from_row + self.lines.len() - 1, to_col_offset + self.lines[self.lines.len() - 1].len())
@@ -26,7 +26,7 @@ fn op(op: EditOperation, from: AbsPosition, lines: Vec<String>) -> Edit {
     Edit { op, from, lines }
 }
 
-pub fn insert(cursor_pos: AbsPosition, to_insert: &str) -> Edit {
+pub fn insert_op(cursor_pos: AbsPosition, to_insert: &str) -> Edit {
     let (lines, _) = split(to_insert);
 
     Edit {
@@ -58,7 +58,7 @@ pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): AbsPosit
 }
 
 
-fn process(content: &mut EditorContent, edit: &Edit) {
+pub fn process(content: &mut EditorContent, edit: &Edit) {
     let Edit { op, from: (from_row, from_col), lines } = edit;
 
     match op {
@@ -93,9 +93,9 @@ mod test {
     }
 
     #[test]
-    fn insert_multi_line() {
+    fn insert_op_multi_line() {
         assert_eq!(
-            insert((0, 5), "Hello\nWorld"),
+            insert_op((0, 5), "Hello\nWorld"),
             op(Insert, (0, 5), vecs!["Hello", "World"])
         )
     }

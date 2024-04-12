@@ -116,7 +116,9 @@ impl Editor {
 
     fn insert(&mut self, str: &str) {
         let (col, row) = self.state.cursor.pos();
-        let (new_row, new_col) = self.state.content.insert((row, col), str);
+        let op = edit::insert_op((row, col), str);
+        let (new_row, new_col) = op.to();
+        edit::process(&mut self.state.content, &op);
         self.move_and_scroll(self.state.cursor.click(&self.state.content, (new_col, new_row)));
         self.renderer.refresh(&self.state);
     }
