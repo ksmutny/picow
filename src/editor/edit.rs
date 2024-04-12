@@ -1,4 +1,4 @@
-use super::{content::EditorContent, state::AbsPosition};
+use super::{content::EditorContent, split::split, state::AbsPosition};
 
 
 #[derive(PartialEq, Debug)]
@@ -26,12 +26,6 @@ fn op(op: EditOperation, from: AbsPosition, lines: Vec<String>) -> Edit {
     Edit { op, from, lines }
 }
 
-
-pub const CRLF: &str = "\r\n";
-pub const LF: &str = "\n";
-pub const CR: &str = "\r";
-
-
 pub fn insert(cursor_pos: AbsPosition, to_insert: &str) -> Edit {
     let (lines, _) = split(to_insert);
 
@@ -40,19 +34,6 @@ pub fn insert(cursor_pos: AbsPosition, to_insert: &str) -> Edit {
         from: cursor_pos,
         lines
     }
-}
-
-pub fn split(content: &str) -> (Vec<String>, String) {
-    let delimiter = detect_line_delimiter(content);
-    let lines = content.split(delimiter).map(String::from).collect();
-    (lines, delimiter.to_string())
-}
-
-fn detect_line_delimiter(file_content: &str) -> &str {
-    if file_content.contains(CRLF) { CRLF }
-    else if file_content.contains(LF) { LF }
-    else if file_content.contains(CR) { CR }
-    else { LF }
 }
 
 pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): AbsPosition, (to_row, to_col): AbsPosition) -> Edit {

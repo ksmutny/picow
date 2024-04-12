@@ -1,8 +1,4 @@
-use super::state::AbsPosition;
-
-pub const CRLF: &str = "\r\n";
-pub const LF: &str = "\n";
-pub const CR: &str = "\r";
+use super::{split::split, state::AbsPosition};
 
 pub struct EditorContent {
     pub lines: Vec<String>,
@@ -15,21 +11,8 @@ impl EditorContent {
     }
 
     pub fn parse(content: &str) -> Self {
-        let (lines, delimiter) = Self::split(content);
+        let (lines, delimiter) = split(content);
         Self::new(lines, delimiter)
-    }
-
-    fn split(content: &str) -> (Vec<String>, String) {
-        let delimiter = Self::detect_line_delimiter(content);
-        let lines = content.split(delimiter).map(String::from).collect();
-        (lines, delimiter.to_string())
-    }
-
-    fn detect_line_delimiter(file_content: &str) -> &str {
-        if file_content.contains(CRLF) { CRLF }
-        else if file_content.contains(LF) { LF }
-        else if file_content.contains(CR) { CR }
-        else { LF }
     }
 
     pub fn line_end(&self, row: usize) -> AbsPosition {
@@ -52,7 +35,7 @@ impl EditorContent {
         let mut to_insert = self.lines[row].clone();
         to_insert.insert_str(col, str);
 
-        let (inserted_lines, _) = Self::split(&to_insert);
+        let (inserted_lines, _) = split(&to_insert);
 
         let cursor_pos = (
             row + inserted_lines.len() - 1,
@@ -82,15 +65,6 @@ mod tests {
     macro_rules! s { ($x:expr) => ($x.to_string()); }
 
     macro_rules! vecs { ($($x:expr),*) => (vec![$(s!($x)),*]); }
-
-
-    #[test]
-    fn parse() {
-        let text = "Hello\r\nWorld\r\n";
-        let content = EditorContent::parse(text);
-        assert_eq!(content.lines, vecs!["Hello", "World", ""]);
-        assert_eq!(content.delimiter, "\r\n".to_string());
-    }
 
 
     #[test]
