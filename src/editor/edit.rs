@@ -77,9 +77,7 @@ fn process(content: &mut EditorContent, edit: &Edit) {
 
 #[cfg(test)]
 mod test {
-    macro_rules! s { ($x:expr) => ($x.to_string()); }
-    macro_rules! vecs { ($($x:expr),*) => (vec![$(s!($x)),*]); }
-
+    use crate::{s, vecs};
     use crate::editor::{content::EditorContent, edit::{EditOperation::*, *}};
 
     #[test]

@@ -19,9 +19,7 @@ fn detect_line_delimiter(file_content: &str) -> &str {
 
 #[cfg(test)]
 mod test {
-    macro_rules! s { ($x:expr) => ($x.to_string()); }
-    macro_rules! vecs { ($($x:expr),*) => (vec![$(s!($x)),*]); }
-
+    use crate::{s, vecs};
     use super::*;
 
     #[test]

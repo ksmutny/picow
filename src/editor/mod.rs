@@ -6,6 +6,7 @@ pub mod state;
 pub mod scroll;
 pub mod split;
 pub mod renderer;
+pub mod macros;
 
 use std::io;
 

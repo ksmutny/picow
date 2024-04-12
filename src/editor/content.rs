@@ -60,12 +60,8 @@ impl EditorContent {
 
 #[cfg(test)]
 mod tests {
+    use crate::{s, vecs};
     use super::*;
-
-    macro_rules! s { ($x:expr) => ($x.to_string()); }
-
-    macro_rules! vecs { ($($x:expr),*) => (vec![$(s!($x)),*]); }
-
 
     #[test]
     fn insert_single_line() {
