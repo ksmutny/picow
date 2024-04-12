@@ -16,7 +16,7 @@ impl EditorContent {
     }
 
     pub fn line_end(&self, row: usize) -> AbsPosition {
-        (self.line_len(row), row)
+        (row, self.line_len(row))
     }
 
     pub fn line_len(&self, row: usize) -> usize {

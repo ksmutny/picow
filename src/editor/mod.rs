@@ -115,18 +115,15 @@ impl Editor {
     }
 
     fn insert(&mut self, str: &str) {
-        let (col, row) = self.state.cursor.pos();
-        let op = edit::insert_op((row, col), str);
-        let (new_row, new_col) = op.to();
+        let op = edit::insert_op(self.state.cursor.pos(), str);
         edit::process(&mut self.state.content, &op);
-        self.move_and_scroll(self.state.cursor.click(&self.state.content, (new_col, new_row)));
+        self.move_and_scroll(self.state.cursor.click(&self.state.content, op.to()));
         self.renderer.refresh(&self.state);
     }
 
     fn delete_char(&mut self) {
          if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
-            let (left_col, left_row) = self.state.cursor.pos();
-            self.state.content.delete((left_row, left_col), (right_row, right_col));
+            self.state.content.delete(self.state.cursor.pos(), (right_row, right_col));
             self.renderer.refresh(&self.state);
         }
     }
@@ -138,6 +135,7 @@ impl Editor {
     }
 
     fn move_and_scroll(&mut self, cursor_command: NavigationCommand) {
-        self.queue((self.state.scroll_into_view(self.state.cursor.pos()), cursor_command));
+        let (row, col) = self.state.cursor.pos();
+        self.queue((self.state.scroll_into_view((col, row)), cursor_command));
     }
 }
