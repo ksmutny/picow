@@ -22,6 +22,11 @@ impl Edit {
     }
 }
 
+fn op(op: EditOperation, from: AbsPosition, lines: Vec<String>) -> Edit {
+    Edit { op, from, lines }
+}
+
+
 pub const CRLF: &str = "\r\n";
 pub const LF: &str = "\n";
 pub const CR: &str = "\r";
@@ -94,17 +99,17 @@ mod test {
     macro_rules! s { ($x:expr) => ($x.to_string()); }
     macro_rules! vecs { ($($x:expr),*) => (vec![$(s!($x)),*]); }
 
-    use crate::editor::{content::EditorContent, edit::{Edit, EditOperation, *}};
+    use crate::editor::{content::EditorContent, edit::{EditOperation::*, *}};
 
     #[test]
     fn to_single_line() {
-        let edit = Edit { op: EditOperation::Insert, from: (12, 14), lines: vecs!["line"] };
+        let edit = op(Insert, (12, 14), vecs!["line"]);
         assert_eq!(edit.to(), (12, 18));
     }
 
     #[test]
     fn to_multi_line() {
-        let edit = Edit { op: EditOperation::Insert, from: (12, 14), lines: vecs!["line 1", "line 23"] };
+        let edit = op(Insert, (12, 14), vecs!["line 1", "line 23"]);
         assert_eq!(edit.to(), (13, 7));
     }
 
@@ -112,11 +117,7 @@ mod test {
     fn insert_multi_line() {
         assert_eq!(
             insert((0, 5), "Hello\nWorld"),
-            Edit {
-                op: EditOperation::Insert,
-                from: (0, 5),
-                lines: vecs!["Hello", "World"]
-            }
+            op(Insert, (0, 5), vecs!["Hello", "World"])
         )
     }
 
@@ -130,11 +131,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (1, 0), (1, 0)),
-            Edit {
-                op: EditOperation::Delete,
-                from: (1, 0),
-                lines: vecs!["A"]
-            }
+            op(Delete, (1, 0), vecs!["A"])
         )
     }
 
@@ -144,11 +141,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (0, 0), (0, 4)),
-            Edit {
-                op: EditOperation::Delete,
-                from: (0, 0),
-                lines: vecs!["Hello"]
-            }
+            op(Delete, (0, 0), vecs!["Hello"])
         )
     }
 
@@ -162,15 +155,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (0, 3), (2, 2)),
-            Edit {
-                op: EditOperation::Delete,
-                from: (0, 3),
-                lines: vecs![
-                    "lo",
-                    "Amazing",
-                    "Wor"
-                ]
-            }
+            op(Delete, (0, 3), vecs!["lo", "Amazing", "Wor"])
         )
     }
 
@@ -183,14 +168,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (0, 0), (1, 4)),
-            Edit {
-                op: EditOperation::Delete,
-                from: (0, 0),
-                lines: vecs![
-                    "Hello",
-                    "World"
-                ]
-            }
+            op(Delete, (0, 0), vecs!["Hello", "World"])
         )
     }
 
@@ -201,7 +179,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit = Edit { op: EditOperation::Insert, from: (0, 4), lines: vecs!["issim"] };
+        let edit = op(Insert, (0, 4), vecs!["issim"]);
 
         process(&mut content, &edit);
 
@@ -218,7 +196,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit = Edit { op: EditOperation::Insert, from: (0, 4), lines: vecs!["issimo", "Bell"] };
+        let edit = op(Insert, (0, 4), vecs!["issimo", "Bell"]);
 
         process(&mut content, &edit);
 
