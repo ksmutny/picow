@@ -65,17 +65,15 @@ impl Editor {
                 _ => None
             };
 
-            let scroll_command = if let Some(Cursor { row, col, .. }) = cursor_command {
-                self.state.scroll_into_view((row, col))
-            } else {
-                match event {
-                    Key(Up, CTRL) | Mouse(WheelUp(_, _)) => self.state.scroll_up(1),
-                    Key(Down, CTRL) | Mouse(WheelDown(_, _)) => self.state.scroll_down(1),
-                    _ => None
-                }
+            self.move_and_scroll(cursor_command);
+
+            let scroll_command = match event {
+                Key(Up, CTRL) | Mouse(WheelUp(_, _)) => self.state.scroll_up(1),
+                Key(Down, CTRL) | Mouse(WheelDown(_, _)) => self.state.scroll_down(1),
+                _ => None
             };
 
-            self.queue((scroll_command, cursor_command));
+            self.scroll(scroll_command);
 
             match event {
                 Key(ref key, _) => match key {
@@ -94,16 +92,6 @@ impl Editor {
         }
     }
 
-
-    fn queue(&mut self, (scroll_cmd, cursor_cmd): (ScrollCommand, NavigationCommand)) {
-        if let Some(ScrollViewportTo(top, left)) = scroll_cmd {
-            self.state.scroll_viewport(top, left);
-            self.renderer.refresh(&self.state);
-        }
-        if let Some(cursor) = cursor_cmd {
-            self.state.cursor = cursor;
-        }
-    }
 
     fn resize(&mut self, (width, height): ViewportDimensions) {
         self.state.resize_viewport(width, height);
@@ -135,7 +123,18 @@ impl Editor {
         self.delete_char();
     }
 
-    fn move_and_scroll(&mut self, cursor_command: NavigationCommand) {
-        self.queue((self.state.scroll_into_view(self.state.cursor.pos()), cursor_command));
+    fn move_and_scroll(&mut self, cursor_cmd: NavigationCommand) {
+        if let Some(cursor) = cursor_cmd {
+            self.state.cursor = cursor;
+            let scroll_cmd = self.state.scroll_into_view(self.state.cursor.pos());
+            self.scroll(scroll_cmd)
+        }
+    }
+
+    fn scroll(&mut self, scroll_cmd: ScrollCommand) {
+        if let Some(ScrollViewportTo(top, left)) = scroll_cmd {
+            self.state.scroll_viewport(top, left);
+            self.renderer.refresh(&self.state);
+        }
     }
 }
