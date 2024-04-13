@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use super::{content::EditorContent, state::AbsPosition};
+use super::{content::EditorContent, state::PosInDocument};
 
 
 #[derive(PartialEq, Debug)]
@@ -18,7 +18,7 @@ impl Cursor {
         Self { row, col, furthest_col: None }
     }
 
-    pub fn pos(&self) -> AbsPosition {
+    pub fn pos(&self) -> PosInDocument {
         (self.row, self.col)
     }
 
@@ -26,22 +26,22 @@ impl Cursor {
         self.row == row && self.col == col
     }
 
-    fn move_to(&self, content: &EditorContent, pos: AbsPosition) -> NavigationCommand {
+    fn move_to(&self, content: &EditorContent, pos: PosInDocument) -> NavigationCommand {
         self.move_to_from(content, pos, None)
     }
 
-    fn move_to_from(&self, content: &EditorContent, pos: AbsPosition, furthest_col: Option<usize>) -> NavigationCommand {
+    fn move_to_from(&self, content: &EditorContent, pos: PosInDocument, furthest_col: Option<usize>) -> NavigationCommand {
         let new_cursor_pos = Self::within_text(content, pos);
         self.move_cmd(new_cursor_pos, furthest_col)
     }
 
-    fn within_text(content: &EditorContent, (row, col): AbsPosition) -> AbsPosition {
+    fn within_text(content: &EditorContent, (row, col): PosInDocument) -> PosInDocument {
         let new_row = min(row, content.last_line_row());
         let new_col = min(col, content.line_len(new_row));
         (new_row, new_col)
     }
 
-    fn move_cmd(&self, (row, col): AbsPosition, furthest_col: Option<usize>) -> NavigationCommand {
+    fn move_cmd(&self, (row, col): PosInDocument, furthest_col: Option<usize>) -> NavigationCommand {
         if self.is_at(row, col) { None } else { Some(Cursor { row, col, furthest_col } ) }
     }
 
@@ -95,7 +95,7 @@ impl Cursor {
         self.move_to(content, content.last_line_end())
     }
 
-    pub fn click(&self, content: &EditorContent, new_pos: AbsPosition) -> NavigationCommand {
+    pub fn click(&self, content: &EditorContent, new_pos: PosInDocument) -> NavigationCommand {
         self.move_to(content, new_pos)
     }
 }

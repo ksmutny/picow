@@ -1,10 +1,10 @@
-use super::{content::EditorContent, split::split, state::AbsPosition};
+use super::{content::EditorContent, split::split, state::PosInDocument};
 
 
 #[derive(PartialEq, Debug)]
 pub struct Edit {
     pub op: EditOperation,
-    pub from: AbsPosition,
+    pub from: PosInDocument,
     pub lines: Vec<String>,
 }
 
@@ -15,18 +15,18 @@ pub enum EditOperation {
 }
 
 impl Edit {
-    pub fn to(&self) -> AbsPosition {
+    pub fn to(&self) -> PosInDocument {
         let (from_row, from_col) = self.from;
         let to_col_offset = if self.lines.len() == 1 { from_col } else { 0 };
         (from_row + self.lines.len() - 1, to_col_offset + self.lines[self.lines.len() - 1].len())
     }
 }
 
-fn op(op: EditOperation, from: AbsPosition, lines: Vec<String>) -> Edit {
+fn op(op: EditOperation, from: PosInDocument, lines: Vec<String>) -> Edit {
     Edit { op, from, lines }
 }
 
-pub fn insert_op(cursor_pos: AbsPosition, to_insert: &str) -> Edit {
+pub fn insert_op(cursor_pos: PosInDocument, to_insert: &str) -> Edit {
     let (lines, _) = split(to_insert);
 
     Edit {
@@ -36,7 +36,7 @@ pub fn insert_op(cursor_pos: AbsPosition, to_insert: &str) -> Edit {
     }
 }
 
-pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): AbsPosition, (to_row, to_col): AbsPosition) -> Edit {
+pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Edit {
     let mut to_delete = Vec::new();
     let mut push = |line: &str| to_delete.push(line.to_owned());
 

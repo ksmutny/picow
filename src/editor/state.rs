@@ -1,8 +1,8 @@
 use super::{content::EditorContent, cursor::Cursor};
 
-pub type CursorPosition = (u16, u16);
+pub type PosOnScreen = (u16, u16);
 pub type ViewportDimensions = (u16, u16);
-pub type AbsPosition = (usize, usize);
+pub type PosInDocument = (usize, usize);
 
 
 pub struct EditorState {
@@ -23,26 +23,26 @@ impl Viewport {
         Self { left, top, width, height }
     }
 
-    pub fn pos(&self) -> AbsPosition { (self.left, self.top) }
+    pub fn pos(&self) -> PosInDocument { (self.left, self.top) }
     pub fn size(&self) -> ViewportDimensions { (self.width, self.height) }
 
-    pub fn cursor_within(&self, (cursor_x, cursor_y): AbsPosition) -> bool {
+    pub fn cursor_within(&self, (cursor_x, cursor_y): PosInDocument) -> bool {
         cursor_x >= self.left && cursor_x < self.left + self.width as usize &&
         cursor_y >= self.top && cursor_y < self.top + self.height as usize
     }
 
-    pub fn to_relative(&self, (x, y): AbsPosition) -> CursorPosition {
+    pub fn to_relative(&self, (x, y): PosInDocument) -> PosOnScreen {
         ((x - self.left + 1) as u16, (y - self.top + 1) as u16)
     }
 
-    pub fn to_absolute(&self, (x, y): CursorPosition) -> AbsPosition {
+    pub fn to_absolute(&self, (x, y): PosOnScreen) -> PosInDocument {
         (x as usize + self.left - 1, y as usize + self.top - 1)
     }
 }
 
 impl EditorState {
 
-    pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: AbsPosition) -> Self {
+    pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: PosInDocument) -> Self {
         let (col, row) = cursor_pos;
         let cursor = Cursor::new(row, col);
         Self { content, viewport, cursor }

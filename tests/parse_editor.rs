@@ -1,5 +1,5 @@
 use picow::editor::{
-    content::EditorContent, cursor::Cursor, scroll::ScrollViewportTo, state::{AbsPosition, EditorState, Viewport, ViewportDimensions}
+    content::EditorContent, cursor::Cursor, scroll::ScrollViewportTo, state::{PosInDocument, EditorState, Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {
@@ -13,8 +13,8 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let mut eof_found = false;
     let mut eof_reached = false;
     let mut viewport_size: ViewportDimensions = (0, 0);
-    let mut cursor_pos: AbsPosition = (0, 0);
-    let mut scroll_pos: AbsPosition = (0, 0);
+    let mut cursor_pos: PosInDocument = (0, 0);
+    let mut scroll_pos: PosInDocument = (0, 0);
     let mut scroll_pos_identified = false;
     let mut expected_cursor = None;
     let mut expected_scroll = None;

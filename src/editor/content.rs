@@ -1,4 +1,4 @@
-use super::{split::split, state::AbsPosition};
+use super::{split::split, state::PosInDocument};
 
 pub struct EditorContent {
     pub lines: Vec<String>,
@@ -15,7 +15,7 @@ impl EditorContent {
         Self::new(lines, delimiter)
     }
 
-    pub fn line_end(&self, row: usize) -> AbsPosition {
+    pub fn line_end(&self, row: usize) -> PosInDocument {
         (row, self.line_len(row))
     }
 
@@ -23,7 +23,7 @@ impl EditorContent {
         self.lines[row].len()
     }
 
-    pub fn last_line_end(&self) -> AbsPosition {
+    pub fn last_line_end(&self) -> PosInDocument {
         self.line_end(self.last_line_row())
     }
 
@@ -31,7 +31,7 @@ impl EditorContent {
         self.lines.len() - 1
     }
 
-    pub fn delete(&mut self, (from_row, from_col): AbsPosition, (to_row, to_col): AbsPosition) {
+    pub fn delete(&mut self, (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) {
         let after_delete = format!("{}{}", &self.lines[from_row][..from_col], &self.lines[to_row][to_col..]);
         self.lines.splice(from_row..=to_row, vec![after_delete]);
     }
