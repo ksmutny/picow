@@ -2,12 +2,12 @@
 #[path ="./navigation_macros.rs"]
 mod navigation_macros;
 
-#[path ="./parse_editor.rs"]
-mod parse_editor;
+#[path ="./parse_editor_state.rs"]
+mod parse_editor_state;
 
 mod move_up {
     use picow::editor::cursor::Cursor;
-    use super::parse_editor::parse_test_case;
+    use super::parse_editor_state::parse_test_case;
 
     test_nav!(
         move_up_1_from_line_2
@@ -56,7 +56,7 @@ mod move_up {
 
 mod move_down {
     use picow::editor::cursor::Cursor;
-    use super::parse_editor::parse_test_case;
+    use super::parse_editor_state::parse_test_case;
 
     test_nav!(
         move_to_scree_bottom
@@ -115,7 +115,7 @@ mod move_down {
 
 mod document_start_end {
     use picow::editor::cursor::Cursor;
-    use super::parse_editor::parse_test_case;
+    use super::parse_editor_state::parse_test_case;
 
     test_nav!(
         move_to_document_start
@@ -148,7 +148,7 @@ mod document_start_end {
 
 mod move_horizoval {
     use picow::editor::cursor::Cursor;
-    use super::parse_editor::parse_test_case;
+    use super::parse_editor_state::parse_test_case;
 
     test_nav!(
         move_to_line_start
