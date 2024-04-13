@@ -30,6 +30,16 @@ impl Viewport {
         cursor_y >= self.top && cursor_y < self.top + self.height as usize
     }
 
+    pub fn scroll(&mut self, top: usize, left: usize) {
+        self.left = left;
+        self.top = top;
+    }
+
+    pub fn resize(&mut self, width: u16, height: u16) {
+        self.width = width;
+        self.height = height - 1;
+    }
+
     pub fn to_relative(&self, (x, y): PosInDocument) -> PosOnScreen {
         ((x - self.left + 1) as u16, (y - self.top + 1) as u16)
     }
@@ -45,15 +55,5 @@ impl EditorState {
         let (col, row) = cursor_pos;
         let cursor = Cursor::new(row, col);
         Self { content, viewport, cursor }
-    }
-
-    pub fn scroll_viewport(&mut self, top: usize, left: usize) {
-        self.viewport.left = left;
-        self.viewport.top = top;
-    }
-
-    pub fn resize_viewport(&mut self, width: u16, height: u16) {
-        self.viewport.width = width;
-        self.viewport.height = height - 1;
     }
 }

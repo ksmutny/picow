@@ -105,7 +105,7 @@ impl Editor {
 
 
     fn resize(&mut self, (width, height): ViewportDimensions) {
-        self.state.resize_viewport(width, height);
+        self.state.viewport.resize(width, height);
         self.mark_for_refresh()
     }
 
@@ -147,7 +147,7 @@ impl Editor {
 
     fn scroll(&mut self, scroll_cmd: ScrollCommand) {
         if let Some(ScrollViewportTo(top, left)) = scroll_cmd {
-            self.state.scroll_viewport(top, left);
+            self.state.viewport.scroll(top, left);
             self.mark_for_refresh()
         }
     }
