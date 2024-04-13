@@ -122,8 +122,9 @@ impl Editor {
     }
 
     fn delete_char(&mut self) {
-         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
-            self.state.content.delete(self.state.cursor.pos(), (right_row, right_col));
+        if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
+            let op = edit::delete_op(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
+            edit::process(&mut self.state.content, &op);
             self.renderer.refresh(&self.state);
         }
     }
