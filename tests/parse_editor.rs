@@ -48,7 +48,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         if line.contains('╔') {
             let exp_scroll_top = i;
             let exp_scroll_left = pos(line, '╔');
-            expected_scroll = Some((exp_scroll_left, exp_scroll_top));
+            expected_scroll = Some((exp_scroll_top, exp_scroll_left));
         }
 
         if line.contains('▯') || line.contains('▯') {
@@ -57,7 +57,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             expected_cursor = Some((exp_cursor_y_abs, exp_cursor_x_abs));
 
             if expected_scroll == None && !scroll_pos_identified {
-                expected_scroll = Some((exp_cursor_x_abs, exp_cursor_y_abs));
+                expected_scroll = Some((exp_cursor_y_abs, exp_cursor_x_abs));
             }
         }
 
@@ -181,7 +181,7 @@ fn move_cursor_and_scroll() {
     ]);
 
     assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 16)));
-    assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(10, 0)));
+    assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(0, 10)));
 }
 
 #[test]

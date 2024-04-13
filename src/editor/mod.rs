@@ -65,8 +65,8 @@ impl Editor {
                 _ => None
             };
 
-            let scroll_command = if let Some(Cursor { col: x, row: y, .. }) = cursor_command {
-                self.state.scroll_into_view((x, y))
+            let scroll_command = if let Some(Cursor { row, col, .. }) = cursor_command {
+                self.state.scroll_into_view((row, col))
             } else {
                 match event {
                     Key(Up, CTRL) | Mouse(WheelUp(_, _)) => self.state.scroll_up(1),
@@ -96,8 +96,8 @@ impl Editor {
 
 
     fn queue(&mut self, (scroll_cmd, cursor_cmd): (ScrollCommand, NavigationCommand)) {
-        if let Some(ScrollViewportTo(left, top)) = scroll_cmd {
-            self.state.scroll_viewport(left, top);
+        if let Some(ScrollViewportTo(top, left)) = scroll_cmd {
+            self.state.scroll_viewport(top, left);
             self.renderer.refresh(&self.state);
         }
         if let Some(cursor) = cursor_cmd {
@@ -135,7 +135,6 @@ impl Editor {
     }
 
     fn move_and_scroll(&mut self, cursor_command: NavigationCommand) {
-        let (row, col) = self.state.cursor.pos();
-        self.queue((self.state.scroll_into_view((col, row)), cursor_command));
+        self.queue((self.state.scroll_into_view(self.state.cursor.pos()), cursor_command));
     }
 }

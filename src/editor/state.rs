@@ -22,7 +22,7 @@ impl Viewport {
         Self { left, top, width, height }
     }
 
-    pub fn pos(&self) -> PosInDocument { (self.left, self.top) }
+    pub fn pos(&self) -> PosInDocument { (self.top, self.left) }
     pub fn size(&self) -> ViewportDimensions { (self.width, self.height) }
 
     pub fn cursor_within(&self, (cursor_x, cursor_y): PosInDocument) -> bool {
@@ -47,16 +47,13 @@ impl EditorState {
         Self { content, viewport, cursor }
     }
 
-    pub fn scroll_viewport(&mut self, x: usize, y: usize) {
-        self.viewport.left = x;
-        self.viewport.top = y;
+    pub fn scroll_viewport(&mut self, top: usize, left: usize) {
+        self.viewport.left = left;
+        self.viewport.top = top;
     }
 
     pub fn resize_viewport(&mut self, width: u16, height: u16) {
         self.viewport.width = width;
         self.viewport.height = height - 1;
     }
-
-    pub fn cursor_x(&self) -> usize { self.cursor.col }
-    pub fn cursor_y(&self) -> usize { self.cursor.row }
 }

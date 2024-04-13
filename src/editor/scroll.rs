@@ -9,7 +9,7 @@ pub type ScrollCommand = Option<ScrollViewportTo>;
 
 impl EditorState {
 
-    pub fn scroll_into_view(&self, (x, y): PosInDocument) -> ScrollCommand {
+    pub fn scroll_into_view(&self, (row, col): PosInDocument) -> ScrollCommand {
         let Viewport { left, top, width, height } = self.viewport;
 
         let scroll_into = |cursor_pos, viewport_start, viewport_size| {
@@ -18,16 +18,7 @@ impl EditorState {
             else { viewport_start }
         };
 
-        self.scroll_cmd((scroll_into(x, left, width), scroll_into(y, top, height)))
-    }
-
-    pub fn scroll_to(&self, (scroll_left, scroll_top): PosInDocument) -> ScrollCommand {
-        let new_scroll_top = min(scroll_top, self.content.last_line_row());
-        self.scroll_cmd((scroll_left, new_scroll_top))
-    }
-
-    fn scroll_cmd(&self, new_pos @ (x, y): PosInDocument) -> ScrollCommand {
-        if new_pos == self.viewport.pos() { None } else { Some(ScrollViewportTo(x, y)) }
+        self.scroll_cmd((scroll_into(row, top, height), scroll_into(col, left, width)))
     }
 
     pub fn scroll_up(&self, n: usize) -> ScrollCommand {
@@ -43,6 +34,15 @@ impl EditorState {
         F: Fn(usize) -> usize,
     {
         let Viewport { left, top, .. } = self.viewport;
-        self.scroll_to((left, new(top)))
+        self.scroll_to((new(top), left))
+    }
+
+    fn scroll_to(&self, (scroll_top, scroll_left): PosInDocument) -> ScrollCommand {
+        let new_scroll_top = min(scroll_top, self.content.last_line_row());
+        self.scroll_cmd((new_scroll_top, scroll_left))
+    }
+
+    fn scroll_cmd(&self, new_pos @ (row, col): PosInDocument) -> ScrollCommand {
+        if new_pos == self.viewport.pos() { None } else { Some(ScrollViewportTo(row, col)) }
     }
 }
