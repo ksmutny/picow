@@ -15,6 +15,10 @@ pub enum EditOperation {
 }
 
 impl Edit {
+    pub fn new(op: EditOperation, from: PosInDocument, lines: Vec<String>) -> Self {
+        Self { op, from, lines }
+    }
+
     pub fn to(&self) -> PosInDocument {
         let (from_row, from_col) = self.from;
         let to_col_offset = if self.lines.len() == 1 { from_col } else { 0 };
@@ -22,18 +26,10 @@ impl Edit {
     }
 }
 
-fn op(op: EditOperation, from: PosInDocument, lines: Vec<String>) -> Edit {
-    Edit { op, from, lines }
-}
-
 pub fn insert_op(cursor_pos: PosInDocument, to_insert: &str) -> Edit {
     let (lines, _) = split(to_insert);
 
-    Edit {
-        op: EditOperation::Insert,
-        from: cursor_pos,
-        lines
-    }
+    Edit::new(EditOperation::Insert, cursor_pos, lines)
 }
 
 pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Edit {
@@ -50,11 +46,7 @@ pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): PosInDoc
         push(&lines[to_row][..=to_col]);
     }
 
-    Edit {
-        op: EditOperation::Delete,
-        from: from_pos,
-        lines: to_delete
-    }
+    Edit::new(EditOperation::Delete, from_pos, to_delete)
 }
 
 
@@ -82,13 +74,13 @@ mod test {
 
     #[test]
     fn to_single_line() {
-        let edit = op(Insert, (12, 14), vecs!["line"]);
+        let edit = Edit::new(Insert, (12, 14), vecs!["line"]);
         assert_eq!(edit.to(), (12, 18));
     }
 
     #[test]
     fn to_multi_line() {
-        let edit = op(Insert, (12, 14), vecs!["line 1", "line 23"]);
+        let edit = Edit::new(Insert, (12, 14), vecs!["line 1", "line 23"]);
         assert_eq!(edit.to(), (13, 7));
     }
 
@@ -96,7 +88,7 @@ mod test {
     fn insert_op_multi_line() {
         assert_eq!(
             insert_op((0, 5), "Hello\nWorld"),
-            op(Insert, (0, 5), vecs!["Hello", "World"])
+            Edit::new(Insert, (0, 5), vecs!["Hello", "World"])
         )
     }
 
@@ -110,7 +102,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (1, 0), (1, 0)),
-            op(Delete, (1, 0), vecs!["A"])
+            Edit::new(Delete, (1, 0), vecs!["A"])
         )
     }
 
@@ -120,7 +112,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (0, 0), (0, 4)),
-            op(Delete, (0, 0), vecs!["Hello"])
+            Edit::new(Delete, (0, 0), vecs!["Hello"])
         )
     }
 
@@ -134,7 +126,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (0, 3), (2, 2)),
-            op(Delete, (0, 3), vecs!["lo", "Amazing", "Wor"])
+            Edit::new(Delete, (0, 3), vecs!["lo", "Amazing", "Wor"])
         )
     }
 
@@ -147,7 +139,7 @@ mod test {
 
         assert_eq!(
             delete(&content, (0, 0), (1, 4)),
-            op(Delete, (0, 0), vecs!["Hello", "World"])
+            Edit::new(Delete, (0, 0), vecs!["Hello", "World"])
         )
     }
 
@@ -158,7 +150,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit = op(Insert, (0, 4), vecs!["issim"]);
+        let edit = Edit::new(Insert, (0, 4), vecs!["issim"]);
 
         process(&mut content, &edit);
 
@@ -175,7 +167,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit = op(Insert, (0, 4), vecs!["issimo", "Bell"]);
+        let edit = Edit::new(Insert, (0, 4), vecs!["issimo", "Bell"]);
 
         process(&mut content, &edit);
 
