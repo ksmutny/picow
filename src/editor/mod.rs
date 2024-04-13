@@ -13,7 +13,7 @@ use std::io;
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, cursor::{Cursor, NavigationCommand}, renderer::EditorRenderer, scroll::{ScrollCommand, ScrollViewportTo}, state::{EditorState, ViewportDimensions}
+    content::EditorContent, cursor::{Cursor, NavigationCommand}, edit::Edit, renderer::EditorRenderer, scroll::{ScrollCommand, ScrollViewportTo}, state::{EditorState, ViewportDimensions}
 };
 
 
@@ -115,16 +115,14 @@ impl Editor {
 
     fn insert(&mut self, str: &str) {
         let op = edit::insert_op(self.state.cursor.pos(), str);
-        edit::process(&mut self.state.content, &op);
+        self.process(&op);
         self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
-        self.mark_for_refresh()
     }
 
     fn delete_char(&mut self) {
         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
             let op = edit::delete_op(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
-            edit::process(&mut self.state.content, &op);
-            self.mark_for_refresh()
+            self.process(&op);
         }
     }
 
@@ -132,6 +130,11 @@ impl Editor {
         if self.state.cursor.is_at(0, 0) { return }
         self.move_and_scroll(self.state.cursor.move_left(&self.state.content));
         self.delete_char();
+    }
+
+    fn process(&mut self, op: &Edit) {
+        edit::process(&mut self.state.content, &op);
+        self.mark_for_refresh()
     }
 
     fn move_and_scroll(&mut self, cursor_cmd: NavigationCommand) {
