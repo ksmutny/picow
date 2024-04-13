@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use super::{content::EditorContent, state::PosInDocument};
+use super::content::{EditorContent, PosInDocument};
 
 
 #[derive(PartialEq, Debug)]

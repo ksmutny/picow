@@ -1,4 +1,6 @@
-use super::{split::split, state::PosInDocument};
+use super::split::split;
+
+pub type PosInDocument = (usize, usize);
 
 pub struct EditorContent {
     pub lines: Vec<String>,

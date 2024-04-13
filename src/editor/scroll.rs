@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use super::state::{PosInDocument, EditorState, Viewport};
+use super::{content::PosInDocument, state::{EditorState, Viewport}};
 
 
 #[derive(PartialEq, Debug)]

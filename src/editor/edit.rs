@@ -1,4 +1,4 @@
-use super::{content::EditorContent, split::split, state::PosInDocument};
+use super::{content::{EditorContent, PosInDocument}, split::split};
 
 
 #[derive(PartialEq, Debug)]

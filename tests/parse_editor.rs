@@ -1,5 +1,5 @@
 use picow::editor::{
-    content::EditorContent, cursor::Cursor, scroll::ScrollViewportTo, state::{PosInDocument, EditorState, Viewport, ViewportDimensions}
+    content::{EditorContent, PosInDocument}, cursor::Cursor, scroll::ScrollViewportTo, state::{EditorState, Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {

@@ -1,8 +1,7 @@
-use super::{content::EditorContent, cursor::Cursor};
+use super::{content::{EditorContent, PosInDocument}, cursor::Cursor};
 
 pub type PosOnScreen = (u16, u16);
 pub type ViewportDimensions = (u16, u16);
-pub type PosInDocument = (usize, usize);
 
 
 pub struct EditorState {
