@@ -20,6 +20,7 @@ use self::{
 pub struct Editor {
     state: EditorState,
     renderer: EditorRenderer,
+    marked_for_refresh: bool
 }
 
 impl Editor {
@@ -27,15 +28,13 @@ impl Editor {
         let viewport = EditorRenderer::create_viewport().unwrap();
         Self {
             state: EditorState::new(content, viewport, (0, 0)),
-            renderer: EditorRenderer::new()
+            renderer: EditorRenderer::new(),
+            marked_for_refresh: true
         }
     }
 
     pub fn run(&mut self) -> io::Result<()> {
-        self.renderer.refresh(&self.state);
-        self.renderer.refresh_cursor(&self.state);
-        self.renderer.flush()?;
-
+        self.refresh()?;
         self.event_loop()
     }
 
@@ -87,15 +86,27 @@ impl Editor {
                 _ => {}
             }
 
-            self.renderer.refresh_status_bar(&self.state);
-            self.renderer.flush()?;
+            self.refresh()?;
         }
+    }
+
+    fn refresh(&mut self) -> io::Result<()> {
+        if self.marked_for_refresh {
+            self.renderer.refresh(&self.state);
+            self.marked_for_refresh = false
+        }
+        self.renderer.refresh_status_bar(&self.state);
+        self.renderer.flush()
+    }
+
+    fn mark_for_refresh(&mut self) {
+        self.marked_for_refresh = true
     }
 
 
     fn resize(&mut self, (width, height): ViewportDimensions) {
         self.state.resize_viewport(width, height);
-        self.renderer.refresh(&self.state)
+        self.mark_for_refresh()
     }
 
     fn insert_char(&mut self, c: char) {
@@ -106,14 +117,14 @@ impl Editor {
         let op = edit::insert_op(self.state.cursor.pos(), str);
         edit::process(&mut self.state.content, &op);
         self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
-        self.renderer.refresh(&self.state);
+        self.mark_for_refresh()
     }
 
     fn delete_char(&mut self) {
         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
             let op = edit::delete_op(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
             edit::process(&mut self.state.content, &op);
-            self.renderer.refresh(&self.state);
+            self.mark_for_refresh()
         }
     }
 
@@ -134,7 +145,7 @@ impl Editor {
     fn scroll(&mut self, scroll_cmd: ScrollCommand) {
         if let Some(ScrollViewportTo(top, left)) = scroll_cmd {
             self.state.scroll_viewport(top, left);
-            self.renderer.refresh(&self.state);
+            self.mark_for_refresh()
         }
     }
 }
