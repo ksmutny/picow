@@ -61,7 +61,7 @@ impl Editor {
 
                     _ => None
                 },
-                Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.click(content, viewport.to_absolute((row, column))),
+                Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.move_to(content, viewport.to_absolute((row, column))),
                 _ => None
             };
 
@@ -117,7 +117,7 @@ impl Editor {
     fn insert(&mut self, str: &str) {
         let op = edit::insert_op(self.state.cursor.pos(), str);
         edit::process(&mut self.state.content, &op);
-        self.move_and_scroll(self.state.cursor.click(&self.state.content, op.to()));
+        self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
         self.renderer.refresh(&self.state);
     }
 

@@ -26,7 +26,7 @@ impl Cursor {
         self.row == row && self.col == col
     }
 
-    fn move_to(&self, content: &EditorContent, pos: PosInDocument) -> NavigationCommand {
+    pub fn move_to(&self, content: &EditorContent, pos: PosInDocument) -> NavigationCommand {
         self.move_to_from(content, pos, None)
     }
 
@@ -93,9 +93,5 @@ impl Cursor {
 
     pub fn move_document_end(&self, content: &EditorContent) -> NavigationCommand {
         self.move_to(content, content.last_line_end())
-    }
-
-    pub fn click(&self, content: &EditorContent, new_pos: PosInDocument) -> NavigationCommand {
-        self.move_to(content, new_pos)
     }
 }
