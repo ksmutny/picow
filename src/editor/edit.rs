@@ -32,18 +32,18 @@ pub fn insert_op(cursor_pos: PosInDocument, to_insert: &str) -> Edit {
     Edit::new(EditOperation::Insert, cursor_pos, lines)
 }
 
-pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Edit {
+pub fn delete_op(content: &EditorContent, from_pos @ (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Edit {
     let mut to_delete = Vec::new();
     let mut push = |line: &str| to_delete.push(line.to_owned());
 
     let lines = &content.lines;
 
     if from_row == to_row {
-        push(&lines[from_row][from_col..=to_col]);
+        push(&lines[from_row][from_col..to_col]);
     } else {
         push(&lines[from_row][from_col..]);
         lines[from_row + 1..to_row].iter().for_each(|line| push(&line));
-        push(&lines[to_row][..=to_col]);
+        push(&lines[to_row][..to_col]);
     }
 
     Edit::new(EditOperation::Delete, from_pos, to_delete)
@@ -51,18 +51,24 @@ pub fn delete(content: &EditorContent, from_pos @ (from_row, from_col): PosInDoc
 
 
 pub fn process(content: &mut EditorContent, edit: &Edit) {
-    let Edit { op, from: (from_row, from_col), lines } = edit;
+    let Edit { op, lines, .. } = edit;
+    let (from_row, from_col) = edit.from;
 
     match op {
         EditOperation::Insert => {
             let mut to_insert = lines.clone();
-            let (pre, post) = content.lines[*from_row].split_at(*from_col);
+            let (pre, post) = content.lines[from_row].split_at(from_col);
             to_insert[0] = pre.to_string() + &to_insert[0];
             to_insert[lines.len() - 1] = to_insert[lines.len() - 1].to_string() + post;
 
             content.lines.splice(from_row..=from_row, to_insert);
         },
-        _ => ()
+        EditOperation::Delete => {
+            let (to_row, to_col) = edit.to();
+            let after_delete = format!("{}{}", &content.lines[from_row][..from_col], &content.lines[to_row][to_col..]);
+
+            content.lines.splice(from_row..=to_row, vec![after_delete]);
+        }
     }
 }
 
@@ -93,7 +99,7 @@ mod test {
     }
 
     #[test]
-    fn delete_char() {
+    fn delete_op_char() {
         let content = EditorContent::new(vecs![
             "Hello",
             "Amazing",
@@ -101,23 +107,33 @@ mod test {
         ], s!["\n"]);
 
         assert_eq!(
-            delete(&content, (1, 0), (1, 0)),
+            delete_op(&content, (1, 0), (1, 1)),
             Edit::new(Delete, (1, 0), vecs!["A"])
         )
     }
 
     #[test]
-    fn delete_line() {
+    fn delete_op_eol() {
+        let content = EditorContent::new(vecs!["Hello", "A"], s!["\n"]);
+
+        assert_eq!(
+            delete_op(&content, (0, 5), (1, 0)),
+            Edit::new(Delete, (0, 5), vecs!["", ""])
+        )
+    }
+
+    #[test]
+    fn delete_op_line() {
         let content = EditorContent::new(vecs!["Hello"], s!["\n"]);
 
         assert_eq!(
-            delete(&content, (0, 0), (0, 4)),
+            delete_op(&content, (0, 0), (0, 5)),
             Edit::new(Delete, (0, 0), vecs!["Hello"])
         )
     }
 
     #[test]
-    fn delete_multi_line() {
+    fn delete_op_multi_line() {
         let content = EditorContent::new(vecs![
             "Hello",
             "Amazing",
@@ -125,20 +141,20 @@ mod test {
         ], s!["\n"]);
 
         assert_eq!(
-            delete(&content, (0, 3), (2, 2)),
+            delete_op(&content, (0, 3), (2, 3)),
             Edit::new(Delete, (0, 3), vecs!["lo", "Amazing", "Wor"])
         )
     }
 
     #[test]
-    fn delete_everything() {
+    fn delete_op_everything() {
         let content = EditorContent::new(vecs![
             "Hello",
             "World"
         ], s!["\n"]);
 
         assert_eq!(
-            delete(&content, (0, 0), (1, 4)),
+            delete_op(&content, (0, 0), (1, 5)),
             Edit::new(Delete, (0, 0), vecs!["Hello", "World"])
         )
     }
@@ -176,5 +192,33 @@ mod test {
             "Bello",
             "World"
         ])
+    }
+
+    #[test]
+    fn process_delete_single_line() {
+        let mut content = EditorContent::new(vecs!["Hello", "World"], s!("\n"));
+
+        let edit = delete_op(&content, (0, 3), (0, 5));
+
+        process(&mut content, &edit);
+        assert_eq!(content.lines, vecs!["Hel", "World"]);
+    }
+
+    #[test]
+    fn delete_eol() {
+        let mut content = EditorContent::new(vecs!["Hello", "World"], s!("\n"));
+        let edit = delete_op(&content, (0, 5), (1, 0));
+
+        process(&mut content, &edit);
+        assert_eq!(content.lines, vecs!["HelloWorld"]);
+    }
+
+    #[test]
+    fn delete_multiple_lines() {
+        let mut content = EditorContent::new(vecs!["Hello", "World", "How are you?"], s!("\n"));
+        let edit = delete_op(&content, (0, 2), (2, 8));
+
+        process(&mut content, &edit);
+        assert_eq!(content.lines, vecs!["Heyou?"]);
     }
 }
