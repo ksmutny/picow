@@ -61,7 +61,7 @@ impl Editor {
 
                     _ => None
                 },
-                Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.click(content, viewport.to_absolute((column, row))),
+                Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.click(content, viewport.to_absolute((row, column))),
                 _ => None
             };
 

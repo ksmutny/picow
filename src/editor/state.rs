@@ -34,8 +34,8 @@ impl Viewport {
         ((x - self.left + 1) as u16, (y - self.top + 1) as u16)
     }
 
-    pub fn to_absolute(&self, (x, y): PosOnScreen) -> PosInDocument {
-        (x as usize + self.left - 1, y as usize + self.top - 1)
+    pub fn to_absolute(&self, (row, col): PosOnScreen) -> PosInDocument {
+        (row as usize + self.top - 1, col as usize + self.left - 1)
     }
 }
 

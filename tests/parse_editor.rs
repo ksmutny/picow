@@ -170,7 +170,7 @@ fn move_cursor_and_scroll() {
     let state = tc.editor_state;
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor.pos(), (3, 16));
-    assert_eq!(state.viewport.pos(), (10, 2));
+    assert_eq!(state.viewport.pos(), (2, 10));
     assert_eq!(state.content.lines, vec![
         "_________ ______ ___",
         "_________ __________________",
