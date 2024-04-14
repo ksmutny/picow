@@ -12,7 +12,7 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::PosInDocument, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::ViewportDimensions
+    content::PosInDocument, edit::EditOp, renderer::EditorRenderer, state::EditorState //, viewport::ViewportDimensions
 };
 
 
@@ -101,10 +101,10 @@ impl Editor {
     }
 
 
-    fn resize(&mut self, (width, height): ViewportDimensions) {
-        self.state.viewport.resize(width, height);
-        self.state.mark_for_refresh()
-    }
+    // fn resize(&mut self, (width, height): ViewportDimensions) {
+    //     self.state.viewport.resize(width, height);
+    //     self.state.mark_for_refresh()
+    // }
 
     fn insert_char(&mut self, c: char) {
         self.insert(&c.to_string());
