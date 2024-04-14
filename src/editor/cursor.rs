@@ -18,6 +18,10 @@ impl Cursor {
         Self { row, col, furthest_col: None }
     }
 
+    pub fn from((row, col): PosInDocument) -> Self {
+        Self::new(row, col)
+    }
+
     pub fn pos(&self) -> PosInDocument {
         (self.row, self.col)
     }

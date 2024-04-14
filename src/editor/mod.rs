@@ -8,17 +8,23 @@ pub mod split;
 pub mod renderer;
 pub mod macros;
 
-use std::io;
+use std::{collections::LinkedList, io};
 
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, cursor::{Cursor, NavigationCommand}, edit::Edit, renderer::EditorRenderer, scroll::{ScrollCommand, ScrollViewportTo}, state::{EditorState, ViewportDimensions}
+    content::EditorContent,
+    cursor::{Cursor, NavigationCommand},
+    edit::Edit,
+    renderer::EditorRenderer,
+    scroll::{ScrollCommand, ScrollViewportTo},
+    state::{EditorState, ViewportDimensions}
 };
 
 
 pub struct Editor {
     state: EditorState,
+    undo_stack: LinkedList<Edit>,
     renderer: EditorRenderer,
     marked_for_refresh: bool
 }
@@ -28,6 +34,7 @@ impl Editor {
         let viewport = EditorRenderer::create_viewport().unwrap();
         Self {
             state: EditorState::new(content, viewport, (0, 0)),
+            undo_stack: LinkedList::new(),
             renderer: EditorRenderer::new(),
             marked_for_refresh: true
         }
@@ -75,11 +82,12 @@ impl Editor {
             self.scroll(scroll_command);
 
             match event {
-                Key(ref key, _) => match key {
-                    Char(c) => self.insert_char(*c),
-                    Enter => self.insert_char('\n'),
-                    Backspace => self.backspace(),
-                    Delete => self.delete_char(),
+                Key(ref key, modifiers) => match (key, modifiers) {
+                    (Char(c), 0) => self.insert_char(*c),
+                    (Enter, 0) => self.insert_char('\n'),
+                    (Backspace, 0) => self.backspace(),
+                    (Delete, 0) => self.delete_char(),
+                    (Char('Z'), CTRL) => self.undo(),
                     _ => {}
                 },
                 Paste(s) => self.insert(&s),
@@ -117,12 +125,14 @@ impl Editor {
         let op = edit::insert_op(self.state.cursor.pos(), str);
         self.process(&op);
         self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
+        self.undo_stack.push_front(op);
     }
 
     fn delete_char(&mut self) {
         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
             let op = edit::delete_op(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
             self.process(&op);
+            self.undo_stack.push_front(op);
         }
     }
 
@@ -130,6 +140,14 @@ impl Editor {
         if self.state.cursor.is_at(0, 0) { return }
         self.move_and_scroll(self.state.cursor.move_left(&self.state.content));
         self.delete_char();
+    }
+
+    fn undo(&mut self) {
+        if let Some(edit) = self.undo_stack.pop_front() {
+            let inverse_op = edit::inverse_op(&edit);
+            self.process(&inverse_op);
+            self.move_and_scroll(Some(Cursor::from(edit.from)));
+        }
     }
 
     fn process(&mut self, op: &Edit) {

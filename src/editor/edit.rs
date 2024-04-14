@@ -1,4 +1,5 @@
 use super::{content::{EditorContent, PosInDocument}, split::split};
+use EditOperation::*;
 
 
 #[derive(PartialEq, Debug)]
@@ -29,7 +30,7 @@ impl Edit {
 pub fn insert_op(cursor_pos: PosInDocument, to_insert: &str) -> Edit {
     let (lines, _) = split(to_insert);
 
-    Edit::new(EditOperation::Insert, cursor_pos, lines)
+    Edit::new(Insert, cursor_pos, lines)
 }
 
 pub fn delete_op(content: &EditorContent, from_pos @ (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Edit {
@@ -46,7 +47,16 @@ pub fn delete_op(content: &EditorContent, from_pos @ (from_row, from_col): PosIn
         push(&lines[to_row][..to_col]);
     }
 
-    Edit::new(EditOperation::Delete, from_pos, to_delete)
+    Edit::new(Delete, from_pos, to_delete)
+}
+
+pub fn inverse_op(edit: &Edit) -> Edit {
+    let op = match edit.op {
+        Insert => Delete,
+        Delete => Insert,
+    };
+
+    Edit::new(op, edit.from, edit.lines.clone())
 }
 
 
