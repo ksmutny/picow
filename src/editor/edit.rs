@@ -20,38 +20,46 @@ impl EditOp {
         Self { kind: op, from, lines }
     }
 
-    pub fn insert(from: PosInDocument, to_insert: &str) -> Self {
-        let (lines, _) = split(to_insert);
-
-        Self::new(Insert, from, lines)
+    pub fn insert(from: PosInDocument, str: &str) -> Self {
+        Self::new(Insert, from, Self::lines_to_insert(str))
     }
 
-    pub fn delete(content: &EditorContent, from @ (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Self {
-        let mut to_delete = Vec::new();
-        let mut push = |line: &str| to_delete.push(line.to_owned());
-
-        let lines = &content.lines;
-
-        if from_row == to_row {
-            push(&lines[from_row][from_col..to_col]);
-        } else {
-            push(&lines[from_row][from_col..]);
-            lines[from_row + 1..to_row].iter().for_each(|line| push(&line));
-            push(&lines[to_row][..to_col]);
-        }
-
-        Self::new(Delete, from, to_delete)
+    pub fn delete(content: &EditorContent, from: PosInDocument, to: PosInDocument) -> Self {
+        Self::new(Delete, from, Self::lines_to_delete(&content, from, to))
     }
 
     pub fn inverse(&self) -> Self {
         Self::new(self.kind.inverse(), self.from, self.lines.clone())
     }
 
+    fn lines_to_insert(str: &str) -> Vec<String> {
+        split(str).0
+    }
+
+    fn lines_to_delete(content: &EditorContent, (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Vec<String> {
+        let mut lines_to_delete = Vec::new();
+        let mut push = |line: &str| lines_to_delete.push(line.to_owned());
+
+        if from_row == to_row {
+            push(&content.lines[from_row][from_col..to_col]);
+        } else {
+            push(&content.lines[from_row][from_col..]);
+            content.lines[from_row + 1..to_row].iter().for_each(|line| push(&line));
+            push(&content.lines[to_row][..to_col]);
+        };
+
+        lines_to_delete
+    }
 
     pub fn to(&self) -> PosInDocument {
         let (from_row, from_col) = self.from;
+
+        let to_row = from_row + self.lines.len() - 1;
+
         let to_col_offset = if self.lines.len() == 1 { from_col } else { 0 };
-        (from_row + self.lines.len() - 1, to_col_offset + self.lines[self.lines.len() - 1].len())
+        let to_col = to_col_offset + self.lines[self.lines.len() - 1].len();
+
+        (to_row, to_col)
     }
 }
 
