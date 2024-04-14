@@ -19,6 +19,7 @@ use self::{
 pub struct Editor {
     state: EditorState,
     undo_stack: LinkedList<EditOp>,
+    redo_stack: LinkedList<EditOp>,
     renderer: EditorRenderer,
     marked_for_refresh: bool
 }
@@ -29,6 +30,7 @@ impl Editor {
         Self {
             state: EditorState::new(content, viewport, (0, 0)),
             undo_stack: LinkedList::new(),
+            redo_stack: LinkedList::new(),
             renderer: EditorRenderer::new(),
             marked_for_refresh: true
         }
@@ -80,6 +82,7 @@ impl Editor {
                     (Enter, 0) => self.insert_char('\n'),
                     (Backspace, 0) => self.backspace(),
                     (Delete, 0) => self.delete_char(),
+                    (Char('Y'), CTRL) => self.redo(),
                     (Char('Z'), CTRL) => self.undo(),
                     _ => {}
                 },
@@ -118,14 +121,14 @@ impl Editor {
         let op = EditOp::insert(self.state.cursor.pos(), str);
         self.process(&op);
         self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
-        self.undo_stack.push_front(op);
+        self.push_to_undo_stack(op);
     }
 
     fn delete_char(&mut self) {
         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
             let op = EditOp::delete(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
             self.process(&op);
-            self.undo_stack.push_front(op);
+            self.push_to_undo_stack(op);
         }
     }
 
@@ -135,11 +138,25 @@ impl Editor {
         self.delete_char();
     }
 
+    fn push_to_undo_stack(&mut self, op: EditOp) {
+        self.undo_stack.push_front(op);
+        self.redo_stack.clear()
+    }
+
     fn undo(&mut self) {
         if let Some(edit_op) = self.undo_stack.pop_front() {
             let inverse_op = edit_op.inverse();
             self.process(&inverse_op);
             self.move_and_scroll(Some(Cursor::from(edit_op.from)));
+            self.redo_stack.push_front(edit_op);
+        }
+    }
+
+    fn redo(&mut self) {
+        if let Some(edit_op) = self.redo_stack.pop_front() {
+            self.process(&edit_op);
+            self.move_and_scroll(Some(Cursor::from(edit_op.to())));
+            self.undo_stack.push_front(edit_op);
         }
     }
 
