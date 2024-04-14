@@ -1,4 +1,4 @@
-use super::{content::{EditorContent, PosInDocument}, cursor::{Cursor, NavigationCommand}, edit::{self, EditOp}, viewport::{ScrollCommand, Viewport}};
+use super::{content::{EditorContent, PosInDocument}, cursor::{Cursor, NavigationCommand}, edit::{self, EditOp, EditOpKind::*}, viewport::{ScrollCommand, Viewport}};
 
 
 pub struct EditorState {
@@ -21,6 +21,12 @@ impl EditorState {
 
     pub fn process(&mut self, op: &EditOp) {
         edit::process(&mut self.content, &op);
+
+        self.move_cursor(Some(Cursor::from(match op.kind {
+            Insert => op.to(),
+            Delete => op.from,
+        })));
+
         self.mark_for_refresh()
     }
 

@@ -12,7 +12,7 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, cursor::Cursor, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::ViewportDimensions
+    content::{EditorContent, PosInDocument}, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::ViewportDimensions
 };
 
 
@@ -111,37 +111,35 @@ impl Editor {
         self.insert(&c.to_string());
     }
 
-    fn insert(&mut self, str: &str) {
-        let op = EditOp::insert(self.state.cursor.pos(), str);
-        self.state.process(&op);
-        self.state.move_cursor(self.state.cursor.move_to(&self.state.content, op.to()));
-        self.push_to_undo_stack(op);
-    }
-
     fn delete_char(&mut self) {
-        if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
-            let op = EditOp::delete(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
-            self.state.process(&op);
-            self.push_to_undo_stack(op);
+        if let Some(cursor) = self.state.cursor.move_right(&self.state.content) {
+            self.delete(self.state.cursor.pos(), cursor.pos())
         }
     }
 
     fn backspace(&mut self) {
-        if self.state.cursor.is_at(0, 0) { return }
-        self.state.move_cursor(self.state.cursor.move_left(&self.state.content));
-        self.delete_char();
+        if let Some(cursor) = self.state.cursor.move_left(&self.state.content) {
+            self.delete(cursor.pos(), self.state.cursor.pos())
+        }
     }
 
-    fn push_to_undo_stack(&mut self, op: EditOp) {
+    fn insert(&mut self, str: &str) {
+        self.process(EditOp::insert(self.state.cursor.pos(), str))
+    }
+
+    fn delete(&mut self, from: PosInDocument, to: PosInDocument) {
+        self.process(EditOp::delete(&self.state.content, from, to))
+    }
+
+    fn process(&mut self, op: EditOp) {
+        self.state.process(&op);
         self.undo_stack.push_front(op);
         self.redo_stack.clear()
     }
 
     fn undo(&mut self) {
         if let Some(edit_op) = self.undo_stack.pop_front() {
-            let inverse_op = edit_op.inverse();
-            self.state.process(&inverse_op);
-            self.state.move_cursor(Some(Cursor::from(edit_op.from)));
+            self.state.process(&edit_op.inverse());
             self.redo_stack.push_front(edit_op);
         }
     }
@@ -149,7 +147,6 @@ impl Editor {
     fn redo(&mut self) {
         if let Some(edit_op) = self.redo_stack.pop_front() {
             self.state.process(&edit_op);
-            self.state.move_cursor(Some(Cursor::from(edit_op.to())));
             self.undo_stack.push_front(edit_op);
         }
     }
