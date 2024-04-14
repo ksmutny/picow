@@ -1,4 +1,4 @@
-use super::{content::{EditorContent, PosInDocument}, split::split};
+use super::content::{EditorContent, PosInDocument, split};
 use EditOperation::*;
 
 

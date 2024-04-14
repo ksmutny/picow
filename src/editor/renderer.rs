@@ -93,7 +93,7 @@ impl EditorRenderer {
     }
 
     fn delimiter_label(&self, delimiter: &str) -> &str {
-        use super::split::{CRLF, CR, LF};
+        use super::content::{CRLF, CR, LF};
 
         match delimiter {
             CRLF => "CRLF",

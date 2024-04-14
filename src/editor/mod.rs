@@ -4,7 +4,6 @@ pub mod edit;
 pub mod state;
 // pub mod events;
 pub mod scroll;
-pub mod split;
 pub mod renderer;
 pub mod macros;
 
