@@ -1,23 +1,23 @@
 use super::content::{EditorContent, PosInDocument, split};
-use EditOperation::*;
+use EditOpKind::*;
 
 
 #[derive(PartialEq, Debug)]
-pub struct Edit {
-    pub op: EditOperation,
+pub struct EditOp {
+    pub kind: EditOpKind,
     pub from: PosInDocument,
     pub lines: Vec<String>,
 }
 
 #[derive(PartialEq, Debug)]
-pub enum EditOperation {
+pub enum EditOpKind {
     Insert,
     Delete
 }
 
-impl Edit {
-    pub fn new(op: EditOperation, from: PosInDocument, lines: Vec<String>) -> Self {
-        Self { op, from, lines }
+impl EditOp {
+    pub fn new(op: EditOpKind, from: PosInDocument, lines: Vec<String>) -> Self {
+        Self { kind: op, from, lines }
     }
 
     pub fn insert(from: PosInDocument, to_insert: &str) -> Self {
@@ -44,12 +44,7 @@ impl Edit {
     }
 
     pub fn inverse(&self) -> Self {
-        let op = match self.op {
-            Insert => Delete,
-            Delete => Insert,
-        };
-
-        Self::new(op, self.from, self.lines.clone())
+        Self::new(self.kind.inverse(), self.from, self.lines.clone())
     }
 
 
@@ -60,13 +55,22 @@ impl Edit {
     }
 }
 
+impl EditOpKind {
+    fn inverse(&self) -> EditOpKind {
+        match self {
+            Insert => Delete,
+            Delete => Insert,
+        }
+    }
+}
 
-pub fn process(content: &mut EditorContent, edit: &Edit) {
-    let Edit { op, lines, .. } = edit;
-    let (from_row, from_col) = edit.from;
+
+pub fn process(content: &mut EditorContent, edit_op: &EditOp) {
+    let EditOp { kind: op, lines, .. } = edit_op;
+    let (from_row, from_col) = edit_op.from;
 
     match op {
-        EditOperation::Insert => {
+        EditOpKind::Insert => {
             let mut to_insert = lines.clone();
             let (pre, post) = content.lines[from_row].split_at(from_col);
             to_insert[0] = pre.to_string() + &to_insert[0];
@@ -74,8 +78,8 @@ pub fn process(content: &mut EditorContent, edit: &Edit) {
 
             content.lines.splice(from_row..=from_row, to_insert);
         },
-        EditOperation::Delete => {
-            let (to_row, to_col) = edit.to();
+        EditOpKind::Delete => {
+            let (to_row, to_col) = edit_op.to();
             let after_delete = format!("{}{}", &content.lines[from_row][..from_col], &content.lines[to_row][to_col..]);
 
             content.lines.splice(from_row..=to_row, vec![after_delete]);
@@ -91,21 +95,21 @@ mod test {
 
     #[test]
     fn to_single_line() {
-        let edit = Edit::new(Insert, (12, 14), vecs!["line"]);
-        assert_eq!(edit.to(), (12, 18));
+        let edit_op = EditOp::new(Insert, (12, 14), vecs!["line"]);
+        assert_eq!(edit_op.to(), (12, 18));
     }
 
     #[test]
     fn to_multi_line() {
-        let edit = Edit::new(Insert, (12, 14), vecs!["line 1", "line 23"]);
-        assert_eq!(edit.to(), (13, 7));
+        let edit_op = EditOp::new(Insert, (12, 14), vecs!["line 1", "line 23"]);
+        assert_eq!(edit_op.to(), (13, 7));
     }
 
     #[test]
     fn insert_op_multi_line() {
         assert_eq!(
-            Edit::insert((0, 5), "Hello\nWorld"),
-            Edit::new(Insert, (0, 5), vecs!["Hello", "World"])
+            EditOp::insert((0, 5), "Hello\nWorld"),
+            EditOp::new(Insert, (0, 5), vecs!["Hello", "World"])
         )
     }
 
@@ -118,8 +122,8 @@ mod test {
         ], s!["\n"]);
 
         assert_eq!(
-            Edit::delete(&content, (1, 0), (1, 1)),
-            Edit::new(Delete, (1, 0), vecs!["A"])
+            EditOp::delete(&content, (1, 0), (1, 1)),
+            EditOp::new(Delete, (1, 0), vecs!["A"])
         )
     }
 
@@ -128,8 +132,8 @@ mod test {
         let content = EditorContent::new(vecs!["Hello", "A"], s!["\n"]);
 
         assert_eq!(
-            Edit::delete(&content, (0, 5), (1, 0)),
-            Edit::new(Delete, (0, 5), vecs!["", ""])
+            EditOp::delete(&content, (0, 5), (1, 0)),
+            EditOp::new(Delete, (0, 5), vecs!["", ""])
         )
     }
 
@@ -138,8 +142,8 @@ mod test {
         let content = EditorContent::new(vecs!["Hello"], s!["\n"]);
 
         assert_eq!(
-            Edit::delete(&content, (0, 0), (0, 5)),
-            Edit::new(Delete, (0, 0), vecs!["Hello"])
+            EditOp::delete(&content, (0, 0), (0, 5)),
+            EditOp::new(Delete, (0, 0), vecs!["Hello"])
         )
     }
 
@@ -152,8 +156,8 @@ mod test {
         ], s!["\n"]);
 
         assert_eq!(
-            Edit::delete(&content, (0, 3), (2, 3)),
-            Edit::new(Delete, (0, 3), vecs!["lo", "Amazing", "Wor"])
+            EditOp::delete(&content, (0, 3), (2, 3)),
+            EditOp::new(Delete, (0, 3), vecs!["lo", "Amazing", "Wor"])
         )
     }
 
@@ -165,8 +169,8 @@ mod test {
         ], s!["\n"]);
 
         assert_eq!(
-            Edit::delete(&content, (0, 0), (1, 5)),
-            Edit::new(Delete, (0, 0), vecs!["Hello", "World"])
+            EditOp::delete(&content, (0, 0), (1, 5)),
+            EditOp::new(Delete, (0, 0), vecs!["Hello", "World"])
         )
     }
 
@@ -177,9 +181,9 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit = Edit::new(Insert, (0, 4), vecs!["issim"]);
+        let edit_op = EditOp::new(Insert, (0, 4), vecs!["issim"]);
 
-        process(&mut content, &edit);
+        process(&mut content, &edit_op);
 
         assert_eq!(content.lines, vecs![
             "Hellissimo",
@@ -194,9 +198,9 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit = Edit::new(Insert, (0, 4), vecs!["issimo", "Bell"]);
+        let edit_op = EditOp::new(Insert, (0, 4), vecs!["issimo", "Bell"]);
 
-        process(&mut content, &edit);
+        process(&mut content, &edit_op);
 
         assert_eq!(content.lines, vecs![
             "Hellissimo",
@@ -209,27 +213,27 @@ mod test {
     fn process_delete_single_line() {
         let mut content = EditorContent::new(vecs!["Hello", "World"], s!("\n"));
 
-        let edit = Edit::delete(&content, (0, 3), (0, 5));
+        let edit_op = EditOp::delete(&content, (0, 3), (0, 5));
 
-        process(&mut content, &edit);
+        process(&mut content, &edit_op);
         assert_eq!(content.lines, vecs!["Hel", "World"]);
     }
 
     #[test]
     fn delete_eol() {
         let mut content = EditorContent::new(vecs!["Hello", "World"], s!("\n"));
-        let edit = Edit::delete(&content, (0, 5), (1, 0));
+        let edit_op = EditOp::delete(&content, (0, 5), (1, 0));
 
-        process(&mut content, &edit);
+        process(&mut content, &edit_op);
         assert_eq!(content.lines, vecs!["HelloWorld"]);
     }
 
     #[test]
     fn delete_multiple_lines() {
         let mut content = EditorContent::new(vecs!["Hello", "World", "How are you?"], s!("\n"));
-        let edit = Edit::delete(&content, (0, 2), (2, 8));
+        let edit_op = EditOp::delete(&content, (0, 2), (2, 8));
 
-        process(&mut content, &edit);
+        process(&mut content, &edit_op);
         assert_eq!(content.lines, vecs!["Heyou?"]);
     }
 }

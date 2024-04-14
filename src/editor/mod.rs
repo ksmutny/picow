@@ -12,13 +12,13 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, cursor::{Cursor, NavigationCommand}, edit::Edit, renderer::EditorRenderer, state::EditorState, viewport::{ScrollCommand, ViewportDimensions}
+    content::EditorContent, cursor::{Cursor, NavigationCommand}, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::{ScrollCommand, ViewportDimensions}
 };
 
 
 pub struct Editor {
     state: EditorState,
-    undo_stack: LinkedList<Edit>,
+    undo_stack: LinkedList<EditOp>,
     renderer: EditorRenderer,
     marked_for_refresh: bool
 }
@@ -115,7 +115,7 @@ impl Editor {
     }
 
     fn insert(&mut self, str: &str) {
-        let op = Edit::insert(self.state.cursor.pos(), str);
+        let op = EditOp::insert(self.state.cursor.pos(), str);
         self.process(&op);
         self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
         self.undo_stack.push_front(op);
@@ -123,7 +123,7 @@ impl Editor {
 
     fn delete_char(&mut self) {
         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
-            let op = Edit::delete(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
+            let op = EditOp::delete(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
             self.process(&op);
             self.undo_stack.push_front(op);
         }
@@ -136,14 +136,14 @@ impl Editor {
     }
 
     fn undo(&mut self) {
-        if let Some(edit) = self.undo_stack.pop_front() {
-            let inverse_op = edit.inverse();
+        if let Some(edit_op) = self.undo_stack.pop_front() {
+            let inverse_op = edit_op.inverse();
             self.process(&inverse_op);
-            self.move_and_scroll(Some(Cursor::from(edit.from)));
+            self.move_and_scroll(Some(Cursor::from(edit_op.from)));
         }
     }
 
-    fn process(&mut self, op: &Edit) {
+    fn process(&mut self, op: &EditOp) {
         edit::process(&mut self.state.content, &op);
         self.mark_for_refresh()
     }
