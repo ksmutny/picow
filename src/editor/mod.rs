@@ -12,7 +12,7 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::{EditorContent, PosInDocument}, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::ViewportDimensions
+    content::PosInDocument, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::ViewportDimensions
 };
 
 
@@ -24,10 +24,9 @@ pub struct Editor {
 }
 
 impl Editor {
-    pub fn new(content: EditorContent) -> Self {
-        let viewport = EditorRenderer::create_viewport().unwrap();
+    pub fn new(state: EditorState) -> Self {
         Self {
-            state: EditorState::new(content, viewport, (0, 0)),
+            state,
             undo_stack: LinkedList::new(),
             redo_stack: LinkedList::new(),
             renderer: EditorRenderer::new(),

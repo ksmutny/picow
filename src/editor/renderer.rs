@@ -1,6 +1,6 @@
 use std::{io, cmp::min};
 
-use crate::terminal::{self, buffer::CommandBuffer, commands::Command};
+use crate::terminal::{buffer::CommandBuffer, commands::Command};
 use super::{state::EditorState, viewport::Viewport};
 
 
@@ -15,11 +15,6 @@ impl EditorRenderer {
             commands: CommandBuffer::new(),
             cursor_hidden: false,
         }
-    }
-
-    pub fn create_viewport() -> io::Result<Viewport> {
-        let (width, height) = terminal::terminal_size()?;
-        Ok(Viewport::new(0, 0, width, height - 1))
     }
 
     pub fn flush(&mut self) -> io::Result<()> {

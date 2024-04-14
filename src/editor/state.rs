@@ -10,7 +10,7 @@ pub struct EditorState {
 
 impl EditorState {
     pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: PosInDocument) -> Self {
-        let (col, row) = cursor_pos;
+        let (row, col) = cursor_pos;
         let cursor = Cursor::new(row, col);
         Self { content, viewport, cursor, marked_for_refresh: true }
     }

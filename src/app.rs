@@ -1,16 +1,18 @@
 use std::{fs, io};
 
 use crate::{
-    editor::{content::EditorContent, Editor},
+    editor::{content::EditorContent, state::EditorState, viewport::Viewport, Editor},
     terminal::{self, buffer::CommandExecutor, commands::Command::*}
 };
 
 
 pub fn start(file_name: &str) -> io::Result<()> {
-    let editor_content = read_content(file_name)?;
+    let content = read_content(file_name)?;
 
     let console_mode = init(file_name)?;
-    Editor::new(editor_content).event_loop()?;
+
+    run_editor(content)?;
+
     close(console_mode)
 }
 
@@ -31,6 +33,18 @@ fn init(file_name: &str) -> io::Result<u32> {
     ).execute()?;
 
     Ok(orig_console_mode)
+}
+
+fn run_editor(content: EditorContent) -> io::Result<()> {
+    let state = EditorState::new(content, create_viewport().unwrap(), (0, 0));
+    let mut editor = Editor::new(state);
+
+    editor.event_loop()
+}
+
+fn create_viewport() -> io::Result<Viewport> {
+    let (width, height) = terminal::terminal_size()?;
+    Ok(Viewport::new(0, 0, width, height - 1))
 }
 
 fn close(orig_console_mode: u32) -> io::Result<()> {
