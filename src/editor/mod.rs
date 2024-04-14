@@ -122,7 +122,7 @@ impl Editor {
     }
 
     fn insert(&mut self, str: &str) {
-        let op = edit::insert_op(self.state.cursor.pos(), str);
+        let op = Edit::insert(self.state.cursor.pos(), str);
         self.process(&op);
         self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
         self.undo_stack.push_front(op);
@@ -130,7 +130,7 @@ impl Editor {
 
     fn delete_char(&mut self) {
         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
-            let op = edit::delete_op(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
+            let op = Edit::delete(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
             self.process(&op);
             self.undo_stack.push_front(op);
         }
@@ -144,7 +144,7 @@ impl Editor {
 
     fn undo(&mut self) {
         if let Some(edit) = self.undo_stack.pop_front() {
-            let inverse_op = edit::inverse_op(&edit);
+            let inverse_op = edit.inverse();
             self.process(&inverse_op);
             self.move_and_scroll(Some(Cursor::from(edit.from)));
         }
