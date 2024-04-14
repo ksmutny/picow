@@ -21,7 +21,6 @@ pub struct Editor {
     undo_stack: LinkedList<EditOp>,
     redo_stack: LinkedList<EditOp>,
     renderer: EditorRenderer,
-    marked_for_refresh: bool
 }
 
 impl Editor {
@@ -32,7 +31,6 @@ impl Editor {
             undo_stack: LinkedList::new(),
             redo_stack: LinkedList::new(),
             renderer: EditorRenderer::new(),
-            marked_for_refresh: true
         }
     }
 
@@ -95,22 +93,18 @@ impl Editor {
     }
 
     fn refresh(&mut self) -> io::Result<()> {
-        if self.marked_for_refresh {
+        if self.state.marked_for_refresh {
             self.renderer.refresh(&self.state);
-            self.marked_for_refresh = false
+            self.state.marked_for_refresh = false
         }
         self.renderer.refresh_status_bar(&self.state);
         self.renderer.flush()
     }
 
-    fn mark_for_refresh(&mut self) {
-        self.marked_for_refresh = true
-    }
-
 
     fn resize(&mut self, (width, height): ViewportDimensions) {
         self.state.viewport.resize(width, height);
-        self.mark_for_refresh()
+        self.state.mark_for_refresh()
     }
 
     fn insert_char(&mut self, c: char) {
@@ -162,7 +156,7 @@ impl Editor {
 
     fn process(&mut self, op: &EditOp) {
         edit::process(&mut self.state.content, &op);
-        self.mark_for_refresh()
+        self.state.mark_for_refresh()
     }
 
     fn move_and_scroll(&mut self, cursor_cmd: NavigationCommand) {
@@ -176,7 +170,7 @@ impl Editor {
     fn scroll(&mut self, scroll_cmd: ScrollCommand) {
         if let Some((top, left)) = scroll_cmd {
             self.state.viewport.scroll(top, left);
-            self.mark_for_refresh()
+            self.state.mark_for_refresh()
         }
     }
 }
