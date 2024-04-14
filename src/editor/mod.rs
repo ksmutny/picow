@@ -12,12 +12,7 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent,
-    cursor::{Cursor, NavigationCommand},
-    edit::Edit,
-    renderer::EditorRenderer,
-    viewport::ScrollCommand,
-    state::{EditorState, ViewportDimensions}
+    content::EditorContent, cursor::{Cursor, NavigationCommand}, edit::Edit, renderer::EditorRenderer, state::EditorState, viewport::{ScrollCommand, ViewportDimensions}
 };
 
 

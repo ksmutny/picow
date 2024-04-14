@@ -1,7 +1,7 @@
 use std::{io, cmp::min};
 
 use crate::terminal::{self, buffer::CommandBuffer, commands::Command};
-use super::state::{EditorState, Viewport};
+use super::{state::EditorState, viewport::Viewport};
 
 
 pub struct EditorRenderer {
