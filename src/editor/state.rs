@@ -1,4 +1,4 @@
-use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, viewport::Viewport};
+use super::{content::{EditorContent, PosInDocument}, cursor::{Cursor, NavigationCommand}, edit::{self, EditOp}, viewport::{ScrollCommand, Viewport}};
 
 
 pub struct EditorState {
@@ -17,5 +17,25 @@ impl EditorState {
 
     pub fn mark_for_refresh(&mut self) {
         self.marked_for_refresh = true
+    }
+
+    pub fn process(&mut self, op: &EditOp) {
+        edit::process(&mut self.content, &op);
+        self.mark_for_refresh()
+    }
+
+    pub fn move_cursor(&mut self, cursor_cmd: NavigationCommand) {
+        if let Some(cursor) = cursor_cmd {
+            self.cursor = cursor;
+            let scroll_cmd = self.viewport.scroll_into_view(self.cursor.pos());
+            self.scroll(scroll_cmd)
+        }
+    }
+
+    pub fn scroll(&mut self, scroll_cmd: ScrollCommand) {
+        if let Some((top, left)) = scroll_cmd {
+            self.viewport.scroll(top, left);
+            self.mark_for_refresh()
+        }
     }
 }

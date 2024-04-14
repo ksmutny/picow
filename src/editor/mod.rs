@@ -12,7 +12,7 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::EditorContent, cursor::{Cursor, NavigationCommand}, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::{ScrollCommand, ViewportDimensions}
+    content::EditorContent, cursor::Cursor, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::ViewportDimensions
 };
 
 
@@ -71,8 +71,8 @@ impl Editor {
                 _ => None
             };
 
-            self.move_and_scroll(cursor_command);
-            self.scroll(scroll_command);
+            self.state.move_cursor(cursor_command);
+            self.state.scroll(scroll_command);
 
             match event {
                 Key(ref key, modifiers) => match (key, modifiers) {
@@ -113,22 +113,22 @@ impl Editor {
 
     fn insert(&mut self, str: &str) {
         let op = EditOp::insert(self.state.cursor.pos(), str);
-        self.process(&op);
-        self.move_and_scroll(self.state.cursor.move_to(&self.state.content, op.to()));
+        self.state.process(&op);
+        self.state.move_cursor(self.state.cursor.move_to(&self.state.content, op.to()));
         self.push_to_undo_stack(op);
     }
 
     fn delete_char(&mut self) {
         if let Some(Cursor { col: right_col, row: right_row, .. }) = self.state.cursor.move_right(&self.state.content) {
             let op = EditOp::delete(&self.state.content, self.state.cursor.pos(), (right_row, right_col));
-            self.process(&op);
+            self.state.process(&op);
             self.push_to_undo_stack(op);
         }
     }
 
     fn backspace(&mut self) {
         if self.state.cursor.is_at(0, 0) { return }
-        self.move_and_scroll(self.state.cursor.move_left(&self.state.content));
+        self.state.move_cursor(self.state.cursor.move_left(&self.state.content));
         self.delete_char();
     }
 
@@ -140,37 +140,17 @@ impl Editor {
     fn undo(&mut self) {
         if let Some(edit_op) = self.undo_stack.pop_front() {
             let inverse_op = edit_op.inverse();
-            self.process(&inverse_op);
-            self.move_and_scroll(Some(Cursor::from(edit_op.from)));
+            self.state.process(&inverse_op);
+            self.state.move_cursor(Some(Cursor::from(edit_op.from)));
             self.redo_stack.push_front(edit_op);
         }
     }
 
     fn redo(&mut self) {
         if let Some(edit_op) = self.redo_stack.pop_front() {
-            self.process(&edit_op);
-            self.move_and_scroll(Some(Cursor::from(edit_op.to())));
+            self.state.process(&edit_op);
+            self.state.move_cursor(Some(Cursor::from(edit_op.to())));
             self.undo_stack.push_front(edit_op);
-        }
-    }
-
-    fn process(&mut self, op: &EditOp) {
-        edit::process(&mut self.state.content, &op);
-        self.state.mark_for_refresh()
-    }
-
-    fn move_and_scroll(&mut self, cursor_cmd: NavigationCommand) {
-        if let Some(cursor) = cursor_cmd {
-            self.state.cursor = cursor;
-            let scroll_cmd = self.state.viewport.scroll_into_view(self.state.cursor.pos());
-            self.scroll(scroll_cmd)
-        }
-    }
-
-    fn scroll(&mut self, scroll_cmd: ScrollCommand) {
-        if let Some((top, left)) = scroll_cmd {
-            self.state.viewport.scroll(top, left);
-            self.state.mark_for_refresh()
         }
     }
 }
