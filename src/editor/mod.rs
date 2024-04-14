@@ -9,7 +9,7 @@ pub mod macros;
 
 use std::{collections::LinkedList, io};
 
-use crate::terminal::{events::{Event::*, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
+use crate::terminal::{events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
     content::{EditorContent, PosInDocument}, edit::EditOp, renderer::EditorRenderer, state::EditorState, viewport::ViewportDimensions
@@ -34,61 +34,61 @@ impl Editor {
         }
     }
 
-    pub fn run(&mut self) -> io::Result<()> {
-        self.refresh()?;
-        self.event_loop()
+    pub fn event_loop(&mut self) -> io::Result<()> {
+        loop {
+            self.refresh()?;
+
+            match read_event()? {
+                Key(Esc, 0) => break Ok(()),
+                event => self.process_event(event)
+            }
+        }
     }
 
-    fn event_loop(&mut self) -> io::Result<()> {
-        loop {
-            let event = read_event()?;
-            let EditorState { ref cursor, ref content, ref viewport, .. } = self.state;
+    fn process_event(&mut self, event: Event) {
+        let EditorState { ref cursor, ref content, ref viewport, .. } = self.state;
 
-            let cursor_command = match event {
-                Key(ref key, modifiers) => match (key, modifiers) {
-                    (Esc, 0) => break Ok(()),
-                    (Home, 0) => cursor.move_line_start(content),
-                    (End, 0) => cursor.move_line_end(content),
-                    (Up, 0) => cursor.move_up(content, 1),
-                    (Down, 0) => cursor.move_down(content, 1),
-                    (Right, 0) => cursor.move_right(content),
-                    (Left, 0) => cursor.move_left(content),
-                    (PageDown, 0) => cursor.move_down(content, viewport.height as usize - 1),
-                    (PageUp, 0) => cursor.move_up(content, viewport.height as usize - 1),
+        let cursor_command = match event {
+            Key(ref key, modifiers) => match (key, modifiers) {
+                (Home, 0) => cursor.move_line_start(content),
+                (End, 0) => cursor.move_line_end(content),
+                (Up, 0) => cursor.move_up(content, 1),
+                (Down, 0) => cursor.move_down(content, 1),
+                (Right, 0) => cursor.move_right(content),
+                (Left, 0) => cursor.move_left(content),
+                (PageDown, 0) => cursor.move_down(content, viewport.height as usize - 1),
+                (PageUp, 0) => cursor.move_up(content, viewport.height as usize - 1),
 
-                    (Home, CTRL) => cursor.move_document_start(content),
-                    (End, CTRL) => cursor.move_document_end(content),
+                (Home, CTRL) => cursor.move_document_start(content),
+                (End, CTRL) => cursor.move_document_end(content),
 
-                    _ => None
-                },
-                Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.move_to(content, viewport.to_absolute((row, column))),
                 _ => None
-            };
+            },
+            Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.move_to(content, viewport.to_absolute((row, column))),
+            _ => None
+        };
 
-            let scroll_command = match event {
-                Key(Up, CTRL) | Mouse(WheelUp(_, _)) => viewport.scroll_up(1),
-                Key(Down, CTRL) | Mouse(WheelDown(_, _)) => viewport.scroll_down(1, content.last_line_row()),
-                _ => None
-            };
+        let scroll_command = match event {
+            Key(Up, CTRL) | Mouse(WheelUp(_, _)) => viewport.scroll_up(1),
+            Key(Down, CTRL) | Mouse(WheelDown(_, _)) => viewport.scroll_down(1, content.last_line_row()),
+            _ => None
+        };
 
-            self.state.move_cursor(cursor_command);
-            self.state.scroll(scroll_command);
+        self.state.move_cursor(cursor_command);
+        self.state.scroll(scroll_command);
 
-            match event {
-                Key(ref key, modifiers) => match (key, modifiers) {
-                    (Char(c), 0) => self.insert_char(*c),
-                    (Enter, 0) => self.insert_char('\n'),
-                    (Backspace, 0) => self.backspace(),
-                    (Delete, 0) => self.delete_char(),
-                    (Char('Y'), CTRL) => self.redo(),
-                    (Char('Z'), CTRL) => self.undo(),
-                    _ => {}
-                },
-                Paste(s) => self.insert(&s),
+        match event {
+            Key(ref key, modifiers) => match (key, modifiers) {
+                (Char(c), 0) => self.insert_char(*c),
+                (Enter, 0) => self.insert_char('\n'),
+                (Backspace, 0) => self.backspace(),
+                (Delete, 0) => self.delete_char(),
+                (Char('Y'), CTRL) => self.redo(),
+                (Char('Z'), CTRL) => self.undo(),
                 _ => {}
-            }
-
-            self.refresh()?;
+            },
+            Paste(s) => self.insert(&s),
+            _ => {}
         }
     }
 

@@ -10,7 +10,7 @@ pub fn start(file_name: &str) -> io::Result<()> {
     let editor_content = read_content(file_name)?;
 
     let console_mode = init(file_name)?;
-    Editor::new(editor_content).run()?;
+    Editor::new(editor_content).event_loop()?;
     close(console_mode)
 }
 
