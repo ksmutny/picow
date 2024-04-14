@@ -66,8 +66,8 @@ impl Editor {
             };
 
             let scroll_command = match event {
-                Key(Up, CTRL) | Mouse(WheelUp(_, _)) => viewport.scroll_up(content, 1),
-                Key(Down, CTRL) | Mouse(WheelDown(_, _)) => viewport.scroll_down(content, 1),
+                Key(Up, CTRL) | Mouse(WheelUp(_, _)) => viewport.scroll_up(1),
+                Key(Down, CTRL) | Mouse(WheelDown(_, _)) => viewport.scroll_down(1, content.last_line_row()),
                 _ => None
             };
 

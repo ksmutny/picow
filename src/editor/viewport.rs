@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use super::content::{EditorContent, PosInDocument};
+use super::content::PosInDocument;
 
 pub type PosOnScreen = (u16, u16);
 pub type ViewportDimensions = (u16, u16);
@@ -56,27 +56,17 @@ impl Viewport {
         self.scroll_cmd((scroll_into(row, self.top, self.height), scroll_into(col, self.left, self.width)))
     }
 
-    pub fn scroll_up(&self, content: &EditorContent, n: usize) -> ScrollCommand {
-        self.scroll_vertical(content, |y| y - min(n, y))
+    pub fn scroll_up(&self, n: usize) -> ScrollCommand {
+        let new_top = self.top - min(n, self.top);
+        self.scroll_cmd((new_top, self.left))
     }
 
-    pub fn scroll_down(&self, content: &EditorContent, n: usize) -> ScrollCommand {
-        self.scroll_vertical(content, |y| y + min(n, content.last_line_row() - y))
+    pub fn scroll_down(&self, n: usize, last_content_row: usize) -> ScrollCommand {
+        let new_top = self.top + min(n, last_content_row - self.top);
+        self.scroll_cmd((new_top, self.left))
     }
 
-    fn scroll_vertical<F>(&self, content: &EditorContent, new: F) -> ScrollCommand
-    where
-        F: Fn(usize) -> usize,
-    {
-        self.scroll_to(content, (new(self.top), self.left))
-    }
-
-    fn scroll_to(&self, content: &EditorContent, (scroll_top, scroll_left): PosInDocument) -> ScrollCommand {
-        let new_scroll_top = min(scroll_top, content.last_line_row());
-        self.scroll_cmd((new_scroll_top, scroll_left))
-    }
-
-    fn scroll_cmd(&self, new_pos @ (row, col): PosInDocument) -> ScrollCommand {
-        if new_pos == self.pos() { None } else { Some((row, col)) }
+    fn scroll_cmd(&self, new_pos @ (top, left): PosInDocument) -> ScrollCommand {
+        if new_pos == self.pos() { None } else { Some((top, left)) }
     }
 }
