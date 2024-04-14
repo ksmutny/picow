@@ -16,7 +16,7 @@ use self::{
     cursor::{Cursor, NavigationCommand},
     edit::Edit,
     renderer::EditorRenderer,
-    scroll::{ScrollCommand, ScrollViewportTo},
+    scroll::ScrollCommand,
     state::{EditorState, ViewportDimensions}
 };
 
@@ -162,7 +162,7 @@ impl Editor {
     }
 
     fn scroll(&mut self, scroll_cmd: ScrollCommand) {
-        if let Some(ScrollViewportTo(top, left)) = scroll_cmd {
+        if let Some((top, left)) = scroll_cmd {
             self.state.viewport.scroll(top, left);
             self.mark_for_refresh()
         }

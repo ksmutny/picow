@@ -3,9 +3,7 @@ use std::cmp::min;
 use super::{content::{EditorContent, PosInDocument}, state::Viewport};
 
 
-#[derive(PartialEq, Debug)]
-pub struct ScrollViewportTo(pub usize, pub usize);
-pub type ScrollCommand = Option<ScrollViewportTo>;
+pub type ScrollCommand = Option<PosInDocument>;
 
 impl Viewport {
 
@@ -40,6 +38,6 @@ impl Viewport {
     }
 
     fn scroll_cmd(&self, new_pos @ (row, col): PosInDocument) -> ScrollCommand {
-        if new_pos == self.pos() { None } else { Some(ScrollViewportTo(row, col)) }
+        if new_pos == self.pos() { None } else { Some((row, col)) }
     }
 }

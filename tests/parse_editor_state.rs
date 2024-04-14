@@ -1,11 +1,11 @@
 use picow::editor::{
-    content::{EditorContent, PosInDocument}, cursor::Cursor, scroll::ScrollViewportTo, state::{EditorState, Viewport, ViewportDimensions}
+    content::{EditorContent, PosInDocument}, cursor::Cursor, state::{EditorState, Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {
     pub editor_state: EditorState,
     pub expected_cursor: Option<Cursor>,
-    pub expected_scroll: Option<ScrollViewportTo>,
+    pub expected_scroll: Option<PosInDocument>,
 }
 
 pub fn parse_test_case(input: Vec<&str>) -> TestCase {
@@ -92,7 +92,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             cursor_pos
         ),
         expected_cursor: expected_cursor.map(|(row, col)| Cursor::new(row, col)),
-        expected_scroll: expected_scroll.map(|(left, top)| ScrollViewportTo(left, top))
+        expected_scroll: expected_scroll.map(|(left, top)| (left, top))
     }
 }
 
@@ -181,7 +181,7 @@ fn move_cursor_and_scroll() {
     ]);
 
     assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 16)));
-    assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(0, 10)));
+    assert_eq!(tc.expected_scroll, Some((0, 10)));
 }
 
 #[test]
@@ -208,7 +208,7 @@ fn document_start() {
     ]);
 
     assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 0)));
-    assert_eq!(tc.expected_scroll, Some(ScrollViewportTo(0, 0)));
+    assert_eq!(tc.expected_scroll, Some((0, 0)));
 }
 
 #[test]
