@@ -17,7 +17,7 @@ use self::{
 
 
 pub struct Editor {
-    state: EditorState,
+    pub state: EditorState,
     undo_stack: LinkedList<EditOp>,
     redo_stack: LinkedList<EditOp>,
     renderer: EditorRenderer,
@@ -44,7 +44,7 @@ impl Editor {
         }
     }
 
-    fn process_event(&mut self, event: Event) {
+    pub fn process_event(&mut self, event: Event) {
         let EditorState { ref cursor, ref content, ref viewport, .. } = self.state;
 
         let cursor_command = match event {

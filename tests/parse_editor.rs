@@ -1,11 +1,11 @@
 use picow::editor::{
-    content::{EditorContent, PosInDocument}, cursor::Cursor, state::EditorState, viewport::{Viewport, ViewportDimensions}
+    content::{EditorContent, PosInDocument}, state::EditorState, viewport::{Viewport, ViewportDimensions}, Editor
 };
 
 pub struct TestCase {
-    pub editor_state: EditorState,
-    pub expected_cursor: Option<Cursor>,
-    pub expected_scroll: Option<PosInDocument>,
+    pub editor: Editor,
+    pub expected_cursor: PosInDocument,
+    pub expected_scroll: PosInDocument,
 }
 
 pub fn parse_test_case(input: Vec<&str>) -> TestCase {
@@ -16,33 +16,33 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let mut cursor_pos: PosInDocument = (0, 0);
     let mut scroll_pos: PosInDocument = (0, 0);
     let mut scroll_pos_identified = false;
-    let mut expected_cursor = None;
-    let mut expected_scroll = None;
+    let mut expected_cursor: Option<PosInDocument> = None;
+    let mut expected_scroll: Option<PosInDocument> = None;
 
     for (i, line) in input.iter().enumerate() {
         if line.contains("┌") {
             let scroll_left = pos(line, '┌');
-            scroll_pos = (scroll_left, i);
+            scroll_pos = (i, scroll_left);
             scroll_pos_identified = true;
         }
 
         if line.starts_with("▮─") && !scroll_pos_identified {
-            scroll_pos = (0, i);
+            scroll_pos = (i, 0);
             scroll_pos_identified = true;
         }
 
         if line.contains("└") {
-            let scroll_top = scroll_pos.1 as u16;
-            let scroll_left = scroll_pos.0 as u16;
+            let scroll_top = scroll_pos.0 as u16;
+            let scroll_left = scroll_pos.1 as u16;
             let viewport_width = pos(line, '┘') as u16 - scroll_left + 1;
             let viewport_height = i as u16 - scroll_top + 1;
             viewport_size = (viewport_width, viewport_height);
         }
 
         if line.contains('▮') {
-            let cursor_x = pos(line, '▮');
-            let cursor_y = i;
-            cursor_pos = (cursor_x, cursor_y);
+            let cursor_col = pos(line, '▮');
+            let cursor_row = i;
+            cursor_pos = (cursor_row, cursor_col);
         }
 
         if line.contains('╔') {
@@ -52,12 +52,12 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         }
 
         if line.contains('▯') || line.contains('▯') {
-            let exp_cursor_x_abs = if line.contains('▯') { pos(line, '▯') } else { pos(line, '▯') };
-            let exp_cursor_y_abs = i;
-            expected_cursor = Some((exp_cursor_y_abs, exp_cursor_x_abs));
+            let exp_cursor_col = if line.contains('▯') { pos(line, '▯') } else { pos(line, '▯') };
+            let exp_cursor_row = i;
+            expected_cursor = Some((exp_cursor_row, exp_cursor_col));
 
             if expected_scroll == None && !scroll_pos_identified {
-                expected_scroll = Some((exp_cursor_y_abs, exp_cursor_x_abs));
+                expected_scroll = expected_cursor;
             }
         }
 
@@ -79,20 +79,26 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         }
     }
 
-    if expected_cursor == Some(cursor_pos) {
-        expected_cursor = None;
+    if expected_cursor == None {
+        expected_cursor = Some(cursor_pos);
+    }
+    if expected_scroll == None {
+        expected_scroll = Some(scroll_pos);
     }
 
-    let (left, top) = scroll_pos;
+    let (top, left) = scroll_pos;
     let (width, height) = viewport_size;
+
     TestCase {
-        editor_state: EditorState::new(
-            EditorContent::new(lines, "\n".to_string()),
-            Viewport::new(left, top, width, height),
-            cursor_pos
+        editor: Editor::new(
+            EditorState::new(
+                EditorContent::new(lines, "\n".to_string()),
+                Viewport::new(left, top, width, height),
+                cursor_pos
+            )
         ),
-        expected_cursor: expected_cursor.map(|(row, col)| Cursor::new(row, col)),
-        expected_scroll: expected_scroll.map(|(left, top)| (left, top))
+        expected_cursor: expected_cursor.unwrap(),
+        expected_scroll: expected_scroll.unwrap()
     }
 }
 
@@ -110,7 +116,7 @@ fn move_cursor_no_scroll() {
         "└───────────┘"  // 3
     ]);
 
-    let state = tc.editor_state;
+    let state = tc.editor.state;
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor.pos(), (1, 6));
     assert_eq!(state.viewport.pos(), (0, 0));
@@ -121,8 +127,8 @@ fn move_cursor_no_scroll() {
         "_____________"
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 6)));
-    assert_eq!(tc.expected_scroll, None);
+    assert_eq!(tc.expected_cursor, (0, 6));
+    assert_eq!(tc.expected_scroll, (0, 0));
 }
 
 #[test]
@@ -135,9 +141,9 @@ fn no_move_cursor() {
         "└───────────┘"  // 3
     ]);
 
-    let state = tc.editor_state;
+    let state = tc.editor.state;
     assert_eq!(state.cursor.pos(), (1, 6));
-    assert_eq!(tc.expected_cursor, None);
+    assert_eq!(tc.expected_cursor, (1, 6));
 }
 
 #[test]
@@ -151,7 +157,7 @@ fn cursor_top_left() {
         "└───────────┘"  // 4
     ]);
 
-    let state = tc.editor_state;
+    let state = tc.editor.state;
     assert_eq!(state.cursor.pos(), (1, 0));
 }
 
@@ -167,7 +173,7 @@ fn move_cursor_and_scroll() {
         "_________ └───────────┘"           // 5
     ]);
 
-    let state = tc.editor_state;
+    let state = tc.editor.state;
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor.pos(), (3, 16));
     assert_eq!(state.viewport.pos(), (2, 10));
@@ -180,8 +186,8 @@ fn move_cursor_and_scroll() {
         "_________ _____________"  // 4
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 16)));
-    assert_eq!(tc.expected_scroll, Some((0, 10)));
+    assert_eq!(tc.expected_cursor, (0, 16));
+    assert_eq!(tc.expected_scroll, (0, 10));
 }
 
 #[test]
@@ -195,7 +201,7 @@ fn document_start() {
         "_└───────────┘"  // 4
     ]);
 
-    let state = tc.editor_state;
+    let state = tc.editor.state;
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor.pos(), (3, 8));
     assert_eq!(state.viewport.pos(), (1, 1));
@@ -207,8 +213,8 @@ fn document_start() {
         "______________"
     ]);
 
-    assert_eq!(tc.expected_cursor, Some(Cursor::new(0, 0)));
-    assert_eq!(tc.expected_scroll, Some((0, 0)));
+    assert_eq!(tc.expected_cursor, (0, 0));
+    assert_eq!(tc.expected_scroll, (0, 0));
 }
 
 #[test]
@@ -220,7 +226,7 @@ fn eol() {
         "└───────────┘"
     ]);
 
-    let state = tc.editor_state;
+    let state = tc.editor.state;
     assert_eq!(state.content.lines, vec![
     //   01234567890123
         "_____________",
@@ -241,7 +247,7 @@ fn eof() {
         "└───────────┘"
     ]);
 
-    let state = tc.editor_state;
+    let state = tc.editor.state;
     assert_eq!(state.content.lines, vec![
         "_____________",
         " _____",
