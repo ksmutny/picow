@@ -3,7 +3,7 @@ pub mod cursor;
 pub mod edit;
 pub mod state;
 // pub mod events;
-pub mod scroll;
+pub mod viewport;
 pub mod renderer;
 pub mod macros;
 
@@ -16,7 +16,7 @@ use self::{
     cursor::{Cursor, NavigationCommand},
     edit::Edit,
     renderer::EditorRenderer,
-    scroll::ScrollCommand,
+    viewport::ScrollCommand,
     state::{EditorState, ViewportDimensions}
 };
 
