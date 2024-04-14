@@ -70,14 +70,13 @@ impl Editor {
                 _ => None
             };
 
-            self.move_and_scroll(cursor_command);
-
             let scroll_command = match event {
-                Key(Up, CTRL) | Mouse(WheelUp(_, _)) => self.state.scroll_up(1),
-                Key(Down, CTRL) | Mouse(WheelDown(_, _)) => self.state.scroll_down(1),
+                Key(Up, CTRL) | Mouse(WheelUp(_, _)) => viewport.scroll_up(content, 1),
+                Key(Down, CTRL) | Mouse(WheelDown(_, _)) => viewport.scroll_down(content, 1),
                 _ => None
             };
 
+            self.move_and_scroll(cursor_command);
             self.scroll(scroll_command);
 
             match event {
@@ -157,7 +156,7 @@ impl Editor {
     fn move_and_scroll(&mut self, cursor_cmd: NavigationCommand) {
         if let Some(cursor) = cursor_cmd {
             self.state.cursor = cursor;
-            let scroll_cmd = self.state.scroll_into_view(self.state.cursor.pos());
+            let scroll_cmd = self.state.viewport.scroll_into_view(self.state.cursor.pos());
             self.scroll(scroll_cmd)
         }
     }
