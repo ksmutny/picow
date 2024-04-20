@@ -1,7 +1,7 @@
 use std::{io, cmp::min};
 
 use crate::terminal::{buffer::CommandBuffer, commands::Command};
-use super::{state::EditorState, viewport::Viewport};
+use super::{row::Row, state::EditorState, viewport::Viewport};
 
 
 pub struct EditorRenderer {
@@ -24,13 +24,13 @@ impl EditorRenderer {
     pub fn refresh(&mut self, state: &EditorState) {
         for (i, line) in self.visible_lines(state).iter().enumerate() {
             self.commands.queue(Command::MoveTo(1, 1 + i as u16));
-            let slice = self.visible_part(line, state);
+            let slice = self.visible_part(&line[..], state);
             self.commands.queue(Command::Print(slice.to_string()));
             self.commands.queue(Command::ClearToEndOfLine);
         }
     }
 
-    fn visible_lines<'a>(&self, state: &'a EditorState) -> &'a [String] {
+    fn visible_lines<'a>(&self, state: &'a EditorState) -> &'a [Row] {
         let top = state.viewport.top;
         let height = state.viewport.height as usize;
         let bottom = min(top + height, state.content.lines.len());

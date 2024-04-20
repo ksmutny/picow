@@ -1,7 +1,4 @@
 #[macro_use]
-#[path ="./editor_macros.rs"]
-mod editor_macros;
-
 #[path ="./parse_editor.rs"]
 mod parse_editor;
 

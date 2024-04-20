@@ -2,4 +2,4 @@
 macro_rules! s { ($x:expr) => ($x.to_string()); }
 
 #[macro_export]
-macro_rules! vecs { ($($x:expr),*) => (vec![$(s!($x)),*]); }
+macro_rules! vecr { ($($x:expr),*) => (vec![$(Row::new($x)),*]); }

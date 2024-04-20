@@ -16,3 +16,8 @@ macro_rules! test_editor {
         }
     };
 }
+
+#[macro_export]
+macro_rules! vecr {
+    ($($x:expr),*) => (vec![$(Row::new($x)),*]);
+}

@@ -1,5 +1,9 @@
+#[macro_use]
+#[path ="./editor_macros.rs"]
+mod editor_macros;
+
 use picow::editor::{
-    content::{EditorContent, PosInDocument}, state::EditorState, viewport::{Viewport, ViewportDimensions}, Editor
+    content::{EditorContent, PosInDocument}, state::EditorState, viewport::{Viewport, ViewportDimensions}, Editor, row::Row
 };
 
 pub struct TestCase {
@@ -73,7 +77,7 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
                 .trim_end()
                 .to_string();
 
-            lines.push(processed_line);
+            lines.push(Row::new(&processed_line));
 
             if eof_found { eof_reached = true; }
         }
@@ -120,7 +124,7 @@ fn move_cursor_no_scroll() {
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor.pos(), (1, 6));
     assert_eq!(state.viewport.pos(), (0, 0));
-    assert_eq!(state.content.lines, vec![
+    assert_eq!(state.content.lines, vecr![
         "______ ______",
         " ______",
         " ______",
@@ -177,7 +181,7 @@ fn move_cursor_and_scroll() {
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor.pos(), (3, 16));
     assert_eq!(state.viewport.pos(), (2, 10));
-    assert_eq!(state.content.lines, vec![
+    assert_eq!(state.content.lines, vecr![
         "_________ ______ ___",
         "_________ __________________",
         "_________ _____________", // 1
@@ -205,7 +209,7 @@ fn document_start() {
     assert_eq!(state.viewport.size(), (13, 4));
     assert_eq!(state.cursor.pos(), (3, 8));
     assert_eq!(state.viewport.pos(), (1, 1));
-    assert_eq!(state.content.lines, vec![
+    assert_eq!(state.content.lines, vecr![
         " _____________",
         "______________",
         "_ _____",
@@ -227,11 +231,11 @@ fn eol() {
     ]);
 
     let state = tc.editor.state;
-    assert_eq!(state.content.lines, vec![
+    assert_eq!(state.content.lines, vecr![
     //   01234567890123
         "_____________",
         " ______",
-        "_____________",
+        "_____________"
     ]);
     assert_eq!(state.cursor.pos(), (1, 7));
 }
@@ -248,10 +252,10 @@ fn eof() {
     ]);
 
     let state = tc.editor.state;
-    assert_eq!(state.content.lines, vec![
+    assert_eq!(state.content.lines, vecr![
         "_____________",
         " _____",
         " _______",
-        " ___",
+        " ___"
     ]);
 }

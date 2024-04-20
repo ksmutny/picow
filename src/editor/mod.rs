@@ -5,6 +5,7 @@ pub mod state;
 // pub mod events;
 pub mod viewport;
 pub mod renderer;
+pub mod row;
 pub mod macros;
 
 use std::{collections::LinkedList, io};
