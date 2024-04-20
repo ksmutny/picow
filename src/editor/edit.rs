@@ -16,8 +16,8 @@ pub enum EditOpKind {
 }
 
 impl EditOp {
-    pub fn new(op: EditOpKind, from: PosInDocument, lines: Vec<Row>) -> Self {
-        Self { kind: op, from, lines }
+    pub fn new(kind: EditOpKind, from: PosInDocument, lines: Vec<Row>) -> Self {
+        Self { kind, from, lines }
     }
 
     pub fn insert(from: PosInDocument, str: &str) -> Self {
@@ -74,10 +74,10 @@ impl EditOpKind {
 
 
 pub fn process(content: &mut EditorContent, edit_op: &EditOp) {
-    let EditOp { kind: op, lines, .. } = edit_op;
+    let EditOp { kind, lines, .. } = edit_op;
     let (from_row, from_col) = edit_op.from;
 
-    match op {
+    match kind {
         EditOpKind::Insert => {
             let mut to_insert = lines.clone();
             let (pre, post) = content.lines[from_row].split_at(from_col);
