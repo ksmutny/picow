@@ -13,7 +13,7 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL}, reader::read_event};
 
 use self::{
-    content::PosInDocument, edit::EditOp, renderer::EditorRenderer, state::EditorState //, viewport::ViewportDimensions
+    content::PosInDocument, edit::EditOp, state::EditorState //, viewport::ViewportDimensions
 };
 
 
@@ -21,7 +21,6 @@ pub struct Editor {
     pub state: EditorState,
     undo_stack: LinkedList<EditOp>,
     redo_stack: LinkedList<EditOp>,
-    renderer: EditorRenderer,
 }
 
 impl Editor {
@@ -30,19 +29,24 @@ impl Editor {
             state,
             undo_stack: LinkedList::new(),
             redo_stack: LinkedList::new(),
-            renderer: EditorRenderer::new(),
         }
     }
 
     pub fn event_loop(&mut self) -> io::Result<()> {
         loop {
-            self.refresh()?;
+            self.render()?;
 
             match read_event()? {
                 Key(Esc, 0) => break Ok(()),
                 event => self.process_event(event)
             }
         }
+    }
+
+    fn render(&mut self) -> io::Result<()> {
+        renderer::render(&self.state)?;
+        self.state.mark_rendered();
+        Ok(())
     }
 
     pub fn process_event(&mut self, event: Event) {
@@ -91,16 +95,6 @@ impl Editor {
             _ => {}
         }
     }
-
-    fn refresh(&mut self) -> io::Result<()> {
-        if self.state.marked_for_refresh {
-            self.renderer.refresh(&self.state);
-            self.state.marked_for_refresh = false
-        }
-        self.renderer.refresh_status_bar(&self.state);
-        self.renderer.flush()
-    }
-
 
     // fn resize(&mut self, (width, height): ViewportDimensions) {
     //     self.state.viewport.resize(width, height);

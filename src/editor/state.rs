@@ -5,18 +5,14 @@ pub struct EditorState {
     pub content: EditorContent,
     pub viewport: Viewport,
     pub cursor: Cursor,
-    pub marked_for_refresh: bool,
+    pub marked_for_render: bool,
 }
 
 impl EditorState {
     pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: PosInDocument) -> Self {
         let (row, col) = cursor_pos;
         let cursor = Cursor::new(row, col);
-        Self { content, viewport, cursor, marked_for_refresh: true }
-    }
-
-    pub fn mark_for_refresh(&mut self) {
-        self.marked_for_refresh = true
+        Self { content, viewport, cursor, marked_for_render: true }
     }
 
     pub fn process(&mut self, op: &EditOp) {
@@ -27,7 +23,7 @@ impl EditorState {
             Delete => op.from,
         })));
 
-        self.mark_for_refresh()
+        self.mark_for_render()
     }
 
     pub fn move_cursor(&mut self, cursor_cmd: NavigationCommand) {
@@ -41,7 +37,16 @@ impl EditorState {
     pub fn scroll(&mut self, scroll_cmd: ScrollCommand) {
         if let Some((top, left)) = scroll_cmd {
             self.viewport.scroll(top, left);
-            self.mark_for_refresh()
+            self.mark_for_render()
         }
+    }
+
+
+    fn mark_for_render(&mut self) {
+        self.marked_for_render = true
+    }
+
+    pub fn mark_rendered(&mut self) {
+        self.marked_for_render = false;
     }
 }

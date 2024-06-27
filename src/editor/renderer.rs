@@ -1,100 +1,92 @@
 use std::{io, cmp::min};
 
-use crate::terminal::{buffer::CommandBuffer, commands::Command};
+use crate::terminal::{buffer::CommandBuffer, commands::Command::*};
 use super::{row::Row, state::EditorState, viewport::Viewport};
 
 
-pub struct EditorRenderer {
-    commands: CommandBuffer,
-    cursor_hidden: bool,
+pub fn render(state: &EditorState) -> io::Result<()> {
+    exec(|commands| {
+        hide_cursor(commands);
+        if state.marked_for_render {
+            render_content(state, commands);
+        }
+        render_status_bar(state, commands);
+        render_cursor(state, commands);
+    })
 }
 
-impl EditorRenderer {
-    pub fn new() -> Self {
-        Self {
-            commands: CommandBuffer::new(),
-            cursor_hidden: false,
-        }
+fn exec<F>(mut action: F) -> io::Result<()>
+where
+    F: FnMut(&mut CommandBuffer) -> (),
+{
+    let mut commands = CommandBuffer::new();
+    action(&mut commands);
+    commands.execute()
+}
+
+fn render_content(state: &EditorState, commands: &mut CommandBuffer) {
+    for (i, row) in visible_rows(state).iter().enumerate() {
+        render_row(i, row, &state.viewport, commands)
     }
+}
 
-    pub fn flush(&mut self) -> io::Result<()> {
-        self.commands.execute()
+fn visible_rows(state: &EditorState) -> &[Row] {
+    let Viewport { top, height, .. } = state.viewport;
+    let bottom = min(top + height as usize, state.content.lines.len());
+
+    &state.content.lines[top..bottom]
+}
+
+fn render_row(i: usize, row: &Row, viewport: &Viewport, commands: &mut CommandBuffer) {
+    let part = visible_row_part(row, viewport);
+
+    commands.queue(MoveTo(1, 1 + i as u16));
+    commands.queue(Print(part));
+    commands.queue(ClearToEndOfLine);
+}
+
+fn visible_row_part(row: &Row, viewport: &Viewport) -> String {
+    let start = viewport.left;
+    if row.len() <= start { return "".to_string() }
+
+    let width = viewport.width as usize;
+    let len = min(row.len() - start, width);
+
+    row[start..start + len].to_string()
+}
+
+fn render_status_bar(state: &EditorState, commands: &mut CommandBuffer) {
+    let Viewport { top, width, height, .. } = state.viewport;
+    let (row, col) = state.cursor.pos();
+
+    let status = format!("{}x{} | {} {} | {} | {}", width, height, row + 1, col + 1, top + 1, delimiter_label(&state.content.delimiter));
+
+    commands.queue(MoveTo(1, state.viewport.height + 1));
+    commands.queue(ClearLine);
+    commands.queue(Print(status));
+}
+
+fn hide_cursor(commands: &mut CommandBuffer) {
+    commands.queue(HideCursor)
+}
+
+fn render_cursor(state: &EditorState, commands: &mut CommandBuffer) {
+    let (row, col) = state.cursor.pos();
+
+    if state.viewport.cursor_within((col, row)) {
+        let (x, y) = state.viewport.to_relative((col, row));
+        commands.queue(MoveTo(x, y));
+        commands.queue(ShowCursor);
     }
+}
 
-    pub fn refresh(&mut self, state: &EditorState) {
-        for (i, line) in self.visible_lines(state).iter().enumerate() {
-            self.commands.queue(Command::MoveTo(1, 1 + i as u16));
-            let slice = self.visible_part(&line[..], state);
-            self.commands.queue(Command::Print(slice.to_string()));
-            self.commands.queue(Command::ClearToEndOfLine);
-        }
-    }
+fn delimiter_label(delimiter: &str) -> &str {
+    use super::content::{CRLF, CR, LF};
 
-    fn visible_lines<'a>(&self, state: &'a EditorState) -> &'a [Row] {
-        let top = state.viewport.top;
-        let height = state.viewport.height as usize;
-        let bottom = min(top + height, state.content.lines.len());
-
-        &state.content.lines[top..bottom]
-    }
-
-    fn visible_part<'a>(&self, line: &'a str, state: &EditorState) -> &'a str {
-        let start = state.viewport.left;
-        if line.len() <= start { return "" }
-
-        let width = state.viewport.width as usize;
-        let len = min(line.len() - start, width);
-
-        &line[start..start + len]
-    }
-
-    pub fn refresh_cursor(&mut self, state: &EditorState) {
-        let (y_abs, x_abs) = state.cursor.pos();
-
-        if !state.viewport.cursor_within((x_abs, y_abs)) {
-            self.hide_cursor();
-        } else {
-            self.show_cursor()
-        }
-
-        if !self.cursor_hidden {
-            let (x, y) = state.viewport.to_relative((x_abs, y_abs));
-            self.commands.queue(Command::MoveTo(x, y))
-        }
-    }
-
-    fn show_cursor(&mut self) {
-        if !self.cursor_hidden { return }
-        self.commands.queue(Command::ShowCursor);
-        self.cursor_hidden = false;
-    }
-
-    fn hide_cursor(&mut self) {
-        if self.cursor_hidden { return }
-        self.commands.queue(Command::HideCursor);
-        self.cursor_hidden = true;
-    }
-
-    pub fn refresh_status_bar(&mut self, state: &EditorState) {
-        let Viewport { top, width, height, .. } = state.viewport;
-        let (y, x) = state.cursor.pos();
-
-        let status = format!("{}x{} | {} {} | {} | {}", width, height, y + 1, x + 1, top + 1, self.delimiter_label(&state.content.delimiter));
-
-        self.commands.queue(Command::MoveTo(1, state.viewport.height + 1));
-        self.commands.queue(Command::ClearLine);
-        self.commands.queue(Command::Print(status));
-        self.refresh_cursor(state);
-    }
-
-    fn delimiter_label(&self, delimiter: &str) -> &str {
-        use super::content::{CRLF, CR, LF};
-
-        match delimiter {
-            CRLF => "CRLF",
-            CR => "CR",
-            LF => "LF",
-            _ => "?"
-        }
+    match delimiter {
+        CRLF => "CRLF",
+        CR => "CR",
+        LF => "LF",
+        _ => "?"
     }
 }
