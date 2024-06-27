@@ -73,9 +73,9 @@ fn hide_cursor(commands: &mut CommandBuffer) {
 fn render_cursor(state: &EditorState, commands: &mut CommandBuffer) {
     let (row, col) = state.cursor.pos();
 
-    if state.viewport.cursor_within((col, row)) {
-        let (x, y) = state.viewport.to_relative((col, row));
-        commands.queue(MoveTo(x, y));
+    if state.viewport.cursor_within((row, col)) {
+        let (row_rel, col_rel) = state.viewport.to_relative((row, col));
+        commands.queue(MoveTo(col_rel, row_rel));
         commands.queue(ShowCursor);
     }
 }

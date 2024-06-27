@@ -23,9 +23,9 @@ impl Viewport {
     pub fn pos(&self) -> PosInDocument { (self.top, self.left) }
     pub fn size(&self) -> ViewportDimensions { (self.width, self.height) }
 
-    pub fn cursor_within(&self, (cursor_x, cursor_y): PosInDocument) -> bool {
-        cursor_x >= self.left && cursor_x < self.left + self.width as usize &&
-        cursor_y >= self.top && cursor_y < self.top + self.height as usize
+    pub fn cursor_within(&self, (row, col): PosInDocument) -> bool {
+        col >= self.left && col < self.left + self.width as usize &&
+        row >= self.top && row < self.top + self.height as usize
     }
 
     pub fn scroll(&mut self, top: usize, left: usize) {
@@ -38,8 +38,8 @@ impl Viewport {
         self.height = height - 1;
     }
 
-    pub fn to_relative(&self, (x, y): PosInDocument) -> PosOnScreen {
-        ((x - self.left + 1) as u16, (y - self.top + 1) as u16)
+    pub fn to_relative(&self, (row, col): PosInDocument) -> PosOnScreen {
+        ((row - self.top + 1) as u16, (col - self.left + 1) as u16)
     }
 
     pub fn to_absolute(&self, (row, col): PosOnScreen) -> PosInDocument {
