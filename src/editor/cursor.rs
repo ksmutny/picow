@@ -61,8 +61,15 @@ impl Cursor {
     where
         F: Fn(usize) -> usize,
     {
-        let new_col = self.furthest_col.unwrap_or(self.col);
-        self.move_to_from(content, (new(self.row), new_col), Some(new_col))
+        let get_line = |idx: usize| { content.lines.get(idx).unwrap() };
+
+        let current_line = get_line(self.row);
+        let new_line = get_line(new(self.row));
+
+        let mono_col = self.furthest_col.unwrap_or(current_line.mono_col_at(self.col));
+        let new_col = new_line.char_idx_at(mono_col);
+
+        self.move_to_from(content, (new(self.row), new_col), Some(mono_col))
     }
 
     pub fn move_left(&self, content: &EditorContent) -> NavigationCommand {
@@ -97,5 +104,50 @@ impl Cursor {
 
     pub fn move_document_end(&self, content: &EditorContent) -> NavigationCommand {
         self.move_to(content, content.last_line_end())
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use crate::editor::{content::EditorContent, cursor::Cursor, row::Row};
+
+    fn curs(row: usize, col: usize, furthest_col: Option<usize>) -> Cursor {
+        Cursor { row, col, furthest_col }
+    }
+
+    fn content(rows: Vec<&str>) -> EditorContent {
+        EditorContent::new(rows.iter().map(|&s| Row::new(s)).collect(), "\n".to_string())
+    }
+
+    #[test]
+    fn unicode_down_2_to_1() {
+        let cursor = curs(0, 2, None);
+        let content = content(vec![
+            "he",
+            "😎😎"
+        ]);
+        assert_eq!(cursor.move_down(&content, 1), Some(curs(1, 1, Some(2))));
+    }
+
+    #[test]
+    fn unicode_down_5_to_2() {
+        let cursor = curs(0, 5, None);
+        let content = content(vec![
+            "hello",
+            "😎😎"
+        ]);
+        assert_eq!(cursor.move_down(&content, 1), Some(curs(1, 2, Some(5))));
+    }
+
+    #[test]
+    fn unicode_down_2_to_5() {
+        let cursor = curs(1, 2, Some(5));
+        let content = content(vec![
+            "hello",
+            "😎😎",
+            "world!"
+        ]);
+        assert_eq!(cursor.move_down(&content, 1), Some(curs(2, 5, Some(5))));
     }
 }

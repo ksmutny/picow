@@ -74,7 +74,8 @@ fn render_cursor(state: &EditorState, commands: &mut CommandBuffer) {
     let (row, col) = state.cursor.pos();
 
     if state.viewport.cursor_within((row, col)) {
-        let (row_rel, col_rel) = state.viewport.to_relative((row, col));
+        let col_2 = state.content.lines[row].mono_col_at(col);
+        let (row_rel, col_rel) = state.viewport.to_relative((row, col_2));
         commands.queue(MoveTo(col_rel, row_rel));
         commands.queue(ShowCursor);
     }
