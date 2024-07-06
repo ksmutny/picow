@@ -1,6 +1,7 @@
 use std::ops::{Index, Range, RangeFrom, RangeFull, RangeTo};
 
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Clone)]
 #[derive(PartialEq)]
@@ -8,26 +9,37 @@ use unicode_segmentation::UnicodeSegmentation;
 pub struct Row {
     bytes: String,
     byte_idx: Vec<usize>,
+    char_width: Vec<usize>,
 }
 
 impl Row {
     pub fn new(str: &str) -> Self {
-        let byte_idx = Self::idx(str);
+        let (byte_idx, char_width) = Self::idx(str);
 
         Self {
             bytes: str.to_string(),
             byte_idx,
+            char_width,
         }
     }
 
-    fn idx(str: &str) -> Vec<usize> {
+    fn idx(str: &str) -> (Vec<usize>, Vec<usize>) {
         let mut byte_idx = Vec::new();
+        let mut char_width = Vec::new();
 
-        for (idx, _) in str.grapheme_indices(true) {
-            byte_idx.push(idx);
+        let mut byte = 0;
+        let mut width = 0;
+
+        for grapheme in UnicodeSegmentation::graphemes(str, true) {
+            byte_idx.push(byte);
+            char_width.push(width);
+
+            byte += grapheme.len();
+            width += UnicodeWidthStr::width(grapheme);
         }
+        char_width.push(width);
 
-        byte_idx
+        (byte_idx, char_width)
     }
 
     fn byte_idx(&self, char_idx: usize) -> usize {
@@ -35,6 +47,22 @@ impl Row {
             return self.byte_idx[char_idx]
         }
         return self.bytes.len();
+    }
+
+    pub fn mono_col_at(&self, char_idx: usize) -> usize {
+        if char_idx < self.char_width.len() {
+            return self.char_width[char_idx]
+        }
+        return self.bytes.len();
+    }
+
+    pub fn char_idx_at(&self, mono_col: usize) -> usize {
+        for (idx, &col) in self.char_width.iter().enumerate() {
+            if col >= mono_col {
+                return idx
+            }
+        }
+        return self.char_width.len();
     }
 
     pub fn len(&self) -> usize {
@@ -114,4 +142,18 @@ mod test {
     test! { range_from: &row("žluťoučký")[2..] => "uťoučký" }
     test! { range_to: &row("žluťoučký")[..7] => "žluťouč" }
     test! { range_full: &row("žluťoučký")[..] => "žluťoučký" }
+
+    test! { char_width_start: row("Hello").mono_col_at(0) => 0 }
+    test! { char_width_ascii: row("Hello").mono_col_at(3) => 3 }
+    test! { char_width_accent: row("kůň").mono_col_at(2) => 2 }
+
+    test! { char_width_emoji_0: row("I💖U").mono_col_at(0) => 0 }
+    test! { char_width_emoji_1: row("I💖U").mono_col_at(1) => 1 }
+    test! { char_width_emoji_2: row("I💖U").mono_col_at(2) => 3 }
+    test! { char_width_emoji_3: row("I💖U").mono_col_at(3) => 4 }
+
+    test! { chat_idx_at_0: row("I💖kůň").char_idx_at(0) => 0 }
+    test! { chat_idx_at_1: row("I💖kůň").char_idx_at(1) => 1 }
+    test! { chat_idx_at_3: row("I💖kůň").char_idx_at(3) => 2 }
+    test! { chat_idx_at_5: row("I💖kůň").char_idx_at(5) => 4 }
 }
