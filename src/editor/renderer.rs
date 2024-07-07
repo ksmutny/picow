@@ -4,10 +4,10 @@ use crate::terminal::{buffer::CommandBuffer, commands::Command::*};
 use super::{row::Row, state::EditorState, viewport::Viewport};
 
 
-pub fn render(state: &EditorState) -> io::Result<()> {
+pub fn render(state: &EditorState, rerender_content: bool) -> io::Result<()> {
     exec(|commands| {
         hide_cursor(commands);
-        if state.marked_for_render {
+        if rerender_content {
             render_content(state, commands);
         }
         render_status_bar(state, commands);

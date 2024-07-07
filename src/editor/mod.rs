@@ -26,19 +26,14 @@ impl Editor {
     }
 
     pub fn event_loop(&mut self) -> io::Result<()> {
+        let mut rerender_content = true;
         loop {
-            self.render()?;
+            renderer::render(&self.state, rerender_content)?;
 
             match read_event()? {
                 Key(Esc, 0) => break Ok(()),
-                event => process_event(event, &mut self.state)
+                event => rerender_content = process_event(event, &mut self.state)
             }
         }
-    }
-
-    fn render(&mut self) -> io::Result<()> {
-        renderer::render(&self.state)?;
-        self.state.mark_rendered();
-        Ok(())
     }
 }
