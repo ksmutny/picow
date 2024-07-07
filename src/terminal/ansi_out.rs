@@ -18,6 +18,7 @@ pub fn ansi(command: &Command) -> String {
         ClearLine => csi!("2K"),
         ClearToEndOfLine => csi!("K"),
         Print(s) => s.to_string(),
+        SetBackgroundColor(color) => csi!("{}m", color),
 
         MoveTo(x, y) => csi!("{};{}H", y, x),
         MoveUp(n) => csi!("{}A", n),

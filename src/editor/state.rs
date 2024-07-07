@@ -1,6 +1,6 @@
 use std::collections::LinkedList;
 
-use super::{content::EditorContent, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, pos::PosInDocument, viewport::Viewport};
+use super::{content::EditorContent, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, pos::{PosInDocument, PosInDocumentExt}, viewport::Viewport};
 
 
 pub struct EditorState {
@@ -13,6 +13,7 @@ pub struct EditorState {
 }
 
 pub type ReRenderContent = bool;
+pub type Selection = Option<(PosInDocument, PosInDocument)>;
 
 impl EditorState {
     pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: PosInDocument) -> Self {
@@ -24,6 +25,16 @@ impl EditorState {
             redo_stack: LinkedList::new(),
         }
     }
+
+    pub fn selection(&self) -> Selection {
+        self.selection_pos.map(|selection_pos|
+            match selection_pos.is_before(&self.cursor.pos()) {
+                true => (selection_pos, self.cursor.pos()),
+                false => (self.cursor.pos(), selection_pos)
+            }
+        )
+    }
+
 
     pub fn move_cursor(&mut self, new_cursor: Cursor, is_selection: bool) -> ReRenderContent {
         let selection_updated = self.update_selection(is_selection);
@@ -45,6 +56,7 @@ impl EditorState {
         was_selected || self.selection_pos.is_some()
     }
 
+
     pub fn scroll(&mut self, scroll_to: PosInDocument) -> ReRenderContent {
         let (top, left) = scroll_to;
         self.viewport.scroll(top, left);
@@ -58,7 +70,6 @@ impl EditorState {
         self.redo_stack.clear();
         true
     }
-
 
     fn process(&mut self, op: &EditOp) {
         edit::process(&mut self.content, &op);

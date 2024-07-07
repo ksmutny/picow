@@ -1,7 +1,7 @@
 use std::{io, cmp::min};
 
-use crate::terminal::{buffer::CommandBuffer, commands::Command::*};
-use super::{row::Row, state::EditorState, viewport::Viewport};
+use crate::{s, terminal::{buffer::CommandBuffer, commands::Command::*}};
+use super::{row::Row, state::{EditorState, Selection}, viewport::Viewport};
 
 
 pub fn render(state: &EditorState, rerender_content: bool) -> io::Result<()> {
@@ -25,8 +25,9 @@ where
 }
 
 fn render_content(state: &EditorState, commands: &mut CommandBuffer) {
+    let selection = state.selection();
     for (i, row) in visible_rows(state).iter().enumerate() {
-        render_row(i, row, &state.viewport, commands)
+        render_row(i, row, &state.viewport, selection, commands)
     }
 }
 
@@ -37,22 +38,43 @@ fn visible_rows(state: &EditorState) -> &[Row] {
     &state.content.lines[top..bottom]
 }
 
-fn render_row(i: usize, row: &Row, viewport: &Viewport, commands: &mut CommandBuffer) {
-    let part = visible_row_part(row, viewport);
+fn render_row(i: usize, row: &Row, viewport: &Viewport, selection: Selection, commands: &mut CommandBuffer) {
+    let (pre_selection, selected, post_selection) = visible_row_part(i, row, viewport, selection);
 
     commands.queue(MoveTo(1, 1 + i as u16));
-    commands.queue(Print(part));
+    commands.queue(Print(pre_selection));
+
+    commands.queue(SetBackgroundColor(100));
+    commands.queue(Print(selected));
+    commands.queue(SetBackgroundColor(0));
+
+    commands.queue(Print(post_selection));
     commands.queue(ClearToEndOfLine);
 }
 
-fn visible_row_part(row: &Row, viewport: &Viewport) -> String {
+fn visible_row_part(i: usize, row: &Row, viewport: &Viewport, selection: Selection) -> (String, String, String) {
     let start = viewport.left;
-    if row.len() <= start { return "".to_string() }
+    if row.len() < start { return (s![""], s![""], s![""]) }
 
     let width = viewport.width as usize;
     let len = min(row.len() - start, width);
 
-    row[start..start + len].to_string()
+    let row_idx = viewport.top + i;
+    match selection {
+        Some(((sel_start_row, sel_start_col), (sel_end_row, sel_end_col)))
+            if row_idx >= sel_start_row && row_idx <= sel_end_row => {
+                let sel_start = if row_idx == sel_start_row { sel_start_col + start } else { start };
+                let sel_end = if row_idx == sel_end_row { sel_end_col + start } else { row.len() + start };
+
+                let pre_selection = if sel_start > start { s![row[start..sel_start]] } else { s![""] };
+                let selected = s![row[sel_start..sel_end]] +
+                    if row_idx < sel_end_row && sel_end >= start + len { " " } else { "" };
+                let post_selection = if sel_end < start + len { s![row[sel_end..start + len]] } else { s![""] };
+
+                (pre_selection, selected, post_selection)
+            },
+        _ => (s![row[start..start + len]], s![""], s![""])
+    }
 }
 
 fn render_status_bar(state: &EditorState, commands: &mut CommandBuffer) {

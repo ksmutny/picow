@@ -3,6 +3,7 @@ pub enum Command {
     ClearLine,
     ClearToEndOfLine,
     Print(String),
+    SetBackgroundColor(u8),
 
     MoveTo(u16, u16),
     MoveUp(u16),
