@@ -48,14 +48,19 @@ mod edit_test {
         assert_eq!((vecr!["Hello", "World"], (1, 1)), parse_rows(input));
     }
 
+    fn assert(state: &EditorState, lines: Vec<&str>) {
+        let (rows, cursor) = parse_rows(lines);
+        assert_eq!(state.content.lines, rows);
+        assert_eq!(state.cursor.pos(), cursor);
+    }
+
     #[test]
     fn test_insert_char() {
         let mut state = state(vec!["H▮llo"]);
 
         process_event(&Key(Char('e'), 0), &mut state);
 
-        assert_eq!(state.content.lines, vecr!["Hello"]);
-        assert_eq!(state.cursor.pos(), (0, 2));
+        assert(&state, vec!["He▮llo"]);
     }
 
     #[test]
@@ -64,7 +69,6 @@ mod edit_test {
 
         process_event(&Key(Char('\n'), 0), &mut state);
 
-        assert_eq!(state.content.lines, vecr!["Hello", "World"]);
-        assert_eq!(state.cursor.pos(), (1, 0));
+        assert(&state, vec!["Hello", "▮World"]);
     }
 }
