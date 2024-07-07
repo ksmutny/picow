@@ -72,14 +72,8 @@ impl EditorState {
     }
 
     fn process(&mut self, op: &EditOp) {
-        edit::process(&mut self.content, &op);
-
-        let cursor = Cursor::from(match op {
-            EditOp::Insert { .. } => op.to(),
-            EditOp::Delete { from, .. } => *from,
-        });
-
-        self.move_cursor(cursor, false);
+        let next_pos = edit::process(&mut self.content, &op);
+        self.move_cursor(Cursor::from(next_pos), false);
     }
 
     pub fn undo(&mut self) -> ReRenderContent {

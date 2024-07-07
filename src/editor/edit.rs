@@ -60,7 +60,7 @@ impl EditOp {
 }
 
 
-pub fn process(content: &mut EditorContent, edit_op: &EditOp) {
+pub fn process(content: &mut EditorContent, edit_op: &EditOp) -> PosInDocument {
     match edit_op {
         Insert { from: (from_row, from_col), lines } => {
             let mut to_insert = lines.clone();
@@ -69,6 +69,8 @@ pub fn process(content: &mut EditorContent, edit_op: &EditOp) {
             to_insert[lines.len() - 1] = to_insert[lines.len() - 1].concat(&post);
 
             content.lines.splice(from_row..=from_row, to_insert);
+
+            edit_op.to()
         },
         Delete { from: (from_row, from_col), .. } => {
             let (to_row, to_col) = edit_op.to();
@@ -77,6 +79,8 @@ pub fn process(content: &mut EditorContent, edit_op: &EditOp) {
             let after_delete = pre.concat(&post);
 
             content.lines.splice(from_row..=&to_row, vec![after_delete]);
+
+            (*from_row, *from_col)
         }
     }
 }
