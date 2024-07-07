@@ -3,7 +3,7 @@
 mod parse_editor;
 
 mod move_up {
-    use picow::terminal::events::{Event::*,KeyCode::*};
+    use picow::{editor::Editor, terminal::events::{Event::*,KeyCode::*}};
     use super::parse_editor::parse_test_case;
 
     test_editor!(
@@ -56,7 +56,7 @@ mod move_up {
 
 
 mod move_down {
-    use picow::terminal::events::{Event::*,KeyCode::*};
+    use picow::{editor::Editor, terminal::events::{Event::*,KeyCode::*}};
     use super::parse_editor::parse_test_case;
 
     test_editor!(
@@ -124,7 +124,7 @@ mod move_down {
 }
 
 mod document_start_end {
-    use picow::terminal::events::{Event::*,KeyCode::*,CTRL};
+    use picow::{editor::Editor, terminal::events::{Event::*,KeyCode::*,CTRL}};
     use super::parse_editor::parse_test_case;
 
     test_editor!(
@@ -157,7 +157,7 @@ mod document_start_end {
 }
 
 mod move_horizoval {
-    use picow::terminal::events::{Event::*,KeyCode::*};
+    use picow::{editor::Editor, terminal::events::{Event::*,KeyCode::*}};
     use super::parse_editor::parse_test_case;
 
     test_editor!(
@@ -283,7 +283,7 @@ mod move_horizoval {
 }
 
 mod selection {
-    use picow::terminal::events::{Event::*,KeyCode::*, SHIFT};
+    use picow::{editor::Editor, terminal::events::{Event::*,KeyCode::*,SHIFT}};
     use super::parse_editor::parse_test_case;
 
     test_editor!(

@@ -31,7 +31,7 @@ impl Editor {
 
             match read_event()? {
                 Key(Esc, 0) => break Ok(()),
-                event => self.process_event(event)
+                event => Self::process_event(event, &mut self.state)
             }
         }
     }
@@ -42,23 +42,23 @@ impl Editor {
         Ok(())
     }
 
-    pub fn process_event(&mut self, event: Event) {
-        cursor_command(&event, &self.state).map(|(cursor, is_selection)|
-            self.state.move_cursor(cursor, is_selection)
+    pub fn process_event(event: Event, state: &mut EditorState) {
+        cursor_command(&event, state).map(|(cursor, is_selection)|
+            state.move_cursor(cursor, is_selection)
         );
 
-        scroll_command(&event, &self.state).map(|scroll_to|
-            self.state.scroll(scroll_to)
+        scroll_command(&event, state).map(|scroll_to|
+            state.scroll(scroll_to)
         );
 
         if let Some(cmd) = undo_redo_command(&event) {
             match cmd {
-                Undo => self.state.undo(),
-                Redo => self.state.redo(),
+                Undo => state.undo(),
+                Redo => state.redo(),
             }
         }
 
-        edit_command(&event, &self.state).map(|edit_op| self.state.edit(edit_op));
+        edit_command(&event, state).map(|edit_op| state.edit(edit_op));
     }
 
     // fn resize(&mut self, (width, height): ViewportDimensions) {
