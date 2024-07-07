@@ -15,6 +15,8 @@ pub enum EditOpKind {
     Delete
 }
 
+pub type EditCommand = Option<EditOp>;
+
 impl EditOp {
     pub fn new(kind: EditOpKind, from: PosInDocument, lines: Vec<Row>) -> Self {
         Self { kind, from, lines }
