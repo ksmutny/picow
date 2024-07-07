@@ -16,20 +16,16 @@ pub enum EditOpKind {
 }
 
 impl EditOp {
-    pub fn new(kind: EditOpKind, from: PosInDocument, lines: Vec<Row>) -> Self {
-        Self { kind, from, lines }
-    }
-
     pub fn insert(from: PosInDocument, str: &str) -> Self {
-        Self::new(Insert, from, Self::lines_to_insert(str))
+        Self { kind: Insert, from, lines: Self::lines_to_insert(str) }
     }
 
     pub fn delete(content: &EditorContent, from: PosInDocument, to: PosInDocument) -> Self {
-        Self::new(Delete, from, Self::lines_to_delete(&content, from, to))
+        Self { kind: Delete, from, lines: Self::lines_to_delete(&content, from, to) }
     }
 
     pub fn inverse(&self) -> Self {
-        Self::new(self.kind.inverse(), self.from, self.lines.clone())
+        Self { kind: self.kind.inverse(), from: self.from, lines: self.lines.clone() }
     }
 
     fn lines_to_insert(str: &str) -> Vec<Row> {
@@ -105,13 +101,13 @@ mod test {
 
     #[test]
     fn to_single_line() {
-        let edit_op = EditOp::new(Insert, (12, 14), vecr!["line"]);
+        let edit_op = EditOp { kind: Insert, from: (12, 14), lines: vecr!["line"] };
         assert_eq!(edit_op.to(), (12, 18));
     }
 
     #[test]
     fn to_multi_line() {
-        let edit_op = EditOp::new(Insert, (12, 14), vecr!["line 1", "line 23"]);
+        let edit_op = EditOp { kind: Insert, from: (12, 14), lines: vecr!["line 1", "line 23"] };
         assert_eq!(edit_op.to(), (13, 7));
     }
 
@@ -119,7 +115,7 @@ mod test {
     fn insert_op_multi_line() {
         assert_eq!(
             EditOp::insert((0, 5), "Hello\nWorld"),
-            EditOp::new(Insert, (0, 5), vecr!["Hello", "World"])
+            EditOp { kind: Insert, from: (0, 5), lines: vecr!["Hello", "World"] }
         )
     }
 
@@ -133,7 +129,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (1, 0), (1, 1)),
-            EditOp::new(Delete, (1, 0), vecr!["A"])
+            EditOp { kind: Delete, from: (1, 0), lines: vecr!["A"] }
         )
     }
 
@@ -143,7 +139,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 5), (1, 0)),
-            EditOp::new(Delete, (0, 5), vecr!["", ""])
+            EditOp { kind: Delete, from: (0, 5), lines: vecr!["", ""] }
         )
     }
 
@@ -153,7 +149,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 0), (0, 5)),
-            EditOp::new(Delete, (0, 0), vecr!["Hello"])
+            EditOp { kind: Delete, from: (0, 0), lines: vecr!["Hello"] }
         )
     }
 
@@ -167,7 +163,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 3), (2, 3)),
-            EditOp::new(Delete, (0, 3), vecr!["lo", "Amazing", "Wor"])
+            EditOp { kind: Delete, from: (0, 3), lines: vecr!["lo", "Amazing", "Wor"] }
         )
     }
 
@@ -180,7 +176,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 0), (1, 5)),
-            EditOp::new(Delete, (0, 0), vecr!["Hello", "World"])
+            EditOp { kind: Delete, from: (0, 0), lines: vecr!["Hello", "World"] }
         )
     }
 
@@ -191,7 +187,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit_op = EditOp::new(Insert, (0, 4), vecr!["issim"]);
+        let edit_op = EditOp { kind: Insert, from: (0, 4), lines: vecr!["issim"] };
 
         process(&mut content, &edit_op);
 
@@ -208,7 +204,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit_op = EditOp::new(Insert, (0, 4), vecr!["issimo", "Bell"]);
+        let edit_op = EditOp { kind: Insert, from: (0, 4), lines: vecr!["issimo", "Bell"] };
 
         process(&mut content, &edit_op);
 
