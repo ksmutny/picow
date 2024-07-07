@@ -15,11 +15,9 @@ pub struct EditorState {
 
 impl EditorState {
     pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: PosInDocument) -> Self {
-        let (row, col) = cursor_pos;
-        let cursor = Cursor::new(row, col);
-
         Self {
-            content, viewport, cursor,
+            content, viewport,
+            cursor: Cursor::from(cursor_pos),
             selection_pos: None,
             marked_for_render: true,
             undo_stack: LinkedList::new(),
