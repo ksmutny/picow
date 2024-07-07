@@ -58,8 +58,9 @@ impl Editor {
             self.state.move_cursor(cursor, is_selection)
         );
 
-        let scroll_command = Self::scroll_command(&event, &self.state);
-        self.state.scroll(scroll_command);
+        Self::scroll_command(&event, &self.state).map(|scroll_to|
+            self.state.scroll(scroll_to)
+        );
 
         if let Some(cmd) = Self::undo_redo_command(&event) {
             match cmd {

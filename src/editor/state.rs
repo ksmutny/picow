@@ -1,4 +1,4 @@
-use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, viewport::{ScrollCommand, Viewport}};
+use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, viewport::Viewport};
 
 
 pub struct EditorState {
@@ -32,8 +32,10 @@ impl EditorState {
     pub fn move_cursor(&mut self, new_cursor: Cursor, is_selection: bool) {
         self.update_selection(is_selection);
         self.cursor = new_cursor;
-        let scroll_cmd = self.viewport.scroll_into_view(self.cursor.pos());
-        self.scroll(scroll_cmd)
+
+        self.viewport.scroll_into_view(self.cursor.pos()).map(|scroll_to|
+            self.scroll(scroll_to)
+        );
     }
 
     fn update_selection(&mut self, is_selection: bool) {
@@ -46,11 +48,10 @@ impl EditorState {
         }
     }
 
-    pub fn scroll(&mut self, scroll_cmd: ScrollCommand) {
-        if let Some((top, left)) = scroll_cmd {
-            self.viewport.scroll(top, left);
-            self.mark_for_render()
-        }
+    pub fn scroll(&mut self, scroll_to: PosInDocument) {
+        let (top, left) = scroll_to;
+        self.viewport.scroll(top, left);
+        self.mark_for_render()
     }
 
 
