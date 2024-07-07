@@ -1,6 +1,6 @@
 use std::collections::LinkedList;
 
-use super::{content::EditorContent, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, pos::{PosInDocument, PosInDocumentExt}, viewport::Viewport};
+use super::{content::EditorContent, cursor::Cursor, edit::{self, EditOp}, pos::{PosInDocument, PosInDocumentExt}, viewport::Viewport};
 
 
 pub struct EditorState {
@@ -74,9 +74,9 @@ impl EditorState {
     fn process(&mut self, op: &EditOp) {
         edit::process(&mut self.content, &op);
 
-        let cursor = Cursor::from(match op.kind {
-            Insert => op.to(),
-            Delete => op.from,
+        let cursor = Cursor::from(match op {
+            EditOp::Insert { .. } => op.to(),
+            EditOp::Delete { from, .. } => *from,
         });
 
         self.move_cursor(cursor, false);

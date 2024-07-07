@@ -1,31 +1,26 @@
-use super::{content::{split, EditorContent}, pos::PosInDocument, row::Row};
-use EditOpKind::*;
+use super::{content::{split, EditorContent}, edit::EditOp::*, pos::PosInDocument, row::Row};
 
 
 #[derive(PartialEq, Debug)]
-pub struct EditOp {
-    pub kind: EditOpKind,
-    pub from: PosInDocument,
-    pub lines: Vec<Row>,
-}
-
-#[derive(PartialEq, Debug)]
-pub enum EditOpKind {
-    Insert,
-    Delete
+pub enum EditOp {
+    Insert { from: PosInDocument, lines: Vec<Row> },
+    Delete { from: PosInDocument, lines: Vec<Row> },
 }
 
 impl EditOp {
     pub fn insert(from: PosInDocument, str: &str) -> Self {
-        Self { kind: Insert, from, lines: Self::lines_to_insert(str) }
+        Insert { from, lines: Self::lines_to_insert(str) }
     }
 
     pub fn delete(content: &EditorContent, from: PosInDocument, to: PosInDocument) -> Self {
-        Self { kind: Delete, from, lines: Self::lines_to_delete(&content, from, to) }
+        Delete { from, lines: Self::lines_to_delete(&content, from, to) }
     }
 
     pub fn inverse(&self) -> Self {
-        Self { kind: self.kind.inverse(), from: self.from, lines: self.lines.clone() }
+        match self {
+            Insert { from, lines } => Delete { from: *from, lines: lines.clone() },
+            Delete { from, lines } => Insert { from: *from, lines: lines.clone() },
+        }
     }
 
     fn lines_to_insert(str: &str) -> Vec<Row> {
@@ -48,47 +43,40 @@ impl EditOp {
     }
 
     pub fn to(&self) -> PosInDocument {
-        let (from_row, from_col) = self.from;
+        let (from, lines) = match self {
+            Insert { from, lines } => (from, lines),
+            Delete { from, lines } => (from, lines),
+        };
 
-        let to_row = from_row + self.lines.len() - 1;
+        let (from_row, from_col) = from;
 
-        let to_col_offset = if self.lines.len() == 1 { from_col } else { 0 };
-        let to_col = to_col_offset + self.lines[self.lines.len() - 1].len();
+        let to_row = from_row + lines.len() - 1;
+
+        let to_col_offset = if lines.len() == 1 { from_col } else { &0 };
+        let to_col = to_col_offset + lines[lines.len() - 1].len();
 
         (to_row, to_col)
     }
 }
 
-impl EditOpKind {
-    fn inverse(&self) -> EditOpKind {
-        match self {
-            Insert => Delete,
-            Delete => Insert,
-        }
-    }
-}
-
 
 pub fn process(content: &mut EditorContent, edit_op: &EditOp) {
-    let EditOp { kind, lines, .. } = edit_op;
-    let (from_row, from_col) = edit_op.from;
-
-    match kind {
-        EditOpKind::Insert => {
+    match edit_op {
+        Insert { from: (from_row, from_col), lines } => {
             let mut to_insert = lines.clone();
-            let (pre, post) = content.lines[from_row].split_at(from_col);
+            let (pre, post) = content.lines[*from_row].split_at(*from_col);
             to_insert[0] = pre.concat(&to_insert[0]);
             to_insert[lines.len() - 1] = to_insert[lines.len() - 1].concat(&post);
 
             content.lines.splice(from_row..=from_row, to_insert);
         },
-        EditOpKind::Delete => {
+        Delete { from: (from_row, from_col), .. } => {
             let (to_row, to_col) = edit_op.to();
-            let pre = Row::new(&content.lines[from_row][..from_col]);
+            let pre = Row::new(&content.lines[*from_row][..*from_col]);
             let post = Row::new(&content.lines[to_row][to_col..]);
             let after_delete = pre.concat(&post);
 
-            content.lines.splice(from_row..=to_row, vec![after_delete]);
+            content.lines.splice(from_row..=&to_row, vec![after_delete]);
         }
     }
 }
@@ -101,13 +89,13 @@ mod test {
 
     #[test]
     fn to_single_line() {
-        let edit_op = EditOp { kind: Insert, from: (12, 14), lines: vecr!["line"] };
+        let edit_op = Insert { from: (12, 14), lines: vecr!["line"] };
         assert_eq!(edit_op.to(), (12, 18));
     }
 
     #[test]
     fn to_multi_line() {
-        let edit_op = EditOp { kind: Insert, from: (12, 14), lines: vecr!["line 1", "line 23"] };
+        let edit_op = Insert { from: (12, 14), lines: vecr!["line 1", "line 23"] };
         assert_eq!(edit_op.to(), (13, 7));
     }
 
@@ -115,7 +103,7 @@ mod test {
     fn insert_op_multi_line() {
         assert_eq!(
             EditOp::insert((0, 5), "Hello\nWorld"),
-            EditOp { kind: Insert, from: (0, 5), lines: vecr!["Hello", "World"] }
+            Insert { from: (0, 5), lines: vecr!["Hello", "World"] }
         )
     }
 
@@ -129,7 +117,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (1, 0), (1, 1)),
-            EditOp { kind: Delete, from: (1, 0), lines: vecr!["A"] }
+            Delete { from: (1, 0), lines: vecr!["A"] }
         )
     }
 
@@ -139,7 +127,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 5), (1, 0)),
-            EditOp { kind: Delete, from: (0, 5), lines: vecr!["", ""] }
+            Delete { from: (0, 5), lines: vecr!["", ""] }
         )
     }
 
@@ -149,7 +137,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 0), (0, 5)),
-            EditOp { kind: Delete, from: (0, 0), lines: vecr!["Hello"] }
+            Delete { from: (0, 0), lines: vecr!["Hello"] }
         )
     }
 
@@ -163,7 +151,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 3), (2, 3)),
-            EditOp { kind: Delete, from: (0, 3), lines: vecr!["lo", "Amazing", "Wor"] }
+            Delete { from: (0, 3), lines: vecr!["lo", "Amazing", "Wor"] }
         )
     }
 
@@ -176,7 +164,7 @@ mod test {
 
         assert_eq!(
             EditOp::delete(&content, (0, 0), (1, 5)),
-            EditOp { kind: Delete, from: (0, 0), lines: vecr!["Hello", "World"] }
+            Delete { from: (0, 0), lines: vecr!["Hello", "World"] }
         )
     }
 
@@ -187,7 +175,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit_op = EditOp { kind: Insert, from: (0, 4), lines: vecr!["issim"] };
+        let edit_op = Insert { from: (0, 4), lines: vecr!["issim"] };
 
         process(&mut content, &edit_op);
 
@@ -204,7 +192,7 @@ mod test {
             "World"
         ], s!["\n"]);
 
-        let edit_op = EditOp { kind: Insert, from: (0, 4), lines: vecr!["issimo", "Bell"] };
+        let edit_op = Insert { from: (0, 4), lines: vecr!["issimo", "Bell"] };
 
         process(&mut content, &edit_op);
 
