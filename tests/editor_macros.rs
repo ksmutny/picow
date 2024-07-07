@@ -8,7 +8,7 @@ macro_rules! test_editor {
             let events = vec![$($event),*];
 
             events.into_iter().for_each(|event| {
-                process_event(event, &mut test_case.state);
+                process_event(&event, &mut test_case.state);
             });
 
             assert_eq!(test_case.state.cursor.pos(), test_case.expected_cursor);

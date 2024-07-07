@@ -24,7 +24,7 @@ pub fn event_loop(state: &mut EditorState) -> io::Result<()> {
 
         match read_event()? {
             Key(Esc, 0) => break Ok(()),
-            event => rerender_content = process_event(event, state)
+            event => rerender_content = process_event(&event, state)
         }
     }
 }

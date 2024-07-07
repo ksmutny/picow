@@ -3,16 +3,16 @@ use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButto
 use super::{content::EditorContent, cursor::Cursor, edit::EditOp, pos::PosInDocument, state::{EditorState, ReRenderContent}, viewport::ScrollCommand};
 
 
-pub fn process_event(event: Event, state: &mut EditorState) -> ReRenderContent {
-    if let Some((cursor, is_selection)) = cursor_command(&event, state) {
+pub fn process_event(event: &Event, state: &mut EditorState) -> ReRenderContent {
+    if let Some((cursor, is_selection)) = cursor_command(event, state) {
         state.move_cursor(cursor, is_selection)
-    } else if let Some(scroll_to) = scroll_command(&event, state) {
+    } else if let Some(scroll_to) = scroll_command(event, state) {
         state.scroll(scroll_to)
-    } else if is_undo(&event) {
+    } else if is_undo(event) {
         state.undo()
-    } else if is_redo(&event) {
+    } else if is_redo(event) {
         state.redo()
-    } else if let Some(edit_op) = edit_command(&event, state) {
+    } else if let Some(edit_op) = edit_command(event, state) {
         state.edit(edit_op)
     } else {
         false
