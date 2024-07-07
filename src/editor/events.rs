@@ -5,12 +5,6 @@ use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::{Edit
 
 pub type CursorCommand = Option<(Cursor, bool)>;
 
-pub enum UndoRedo {
-    Undo,
-    Redo,
-}
-pub type UndoRedoCommand = Option<UndoRedo>;
-
 pub fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
     let EditorState { ref cursor, ref content, ref viewport, .. } = state;
 
@@ -47,12 +41,12 @@ pub fn scroll_command(event: &Event, state: &EditorState) -> ScrollCommand {
     }
 }
 
-pub fn undo_redo_command(event: &Event) -> UndoRedoCommand {
-    match event {
-        Key(Char('Y'), CTRL) => Some(UndoRedo::Redo),
-        Key(Char('Z'), CTRL) => Some(UndoRedo::Undo),
-        _ => None
-    }
+pub fn is_undo(event: &Event) -> bool {
+    matches!(event, Key(Char('Z'), CTRL))
+}
+
+pub fn is_redo(event: &Event) -> bool {
+    matches!(event, Key(Char('Y'), CTRL))
 }
 
 pub fn edit_command(event: &Event, state: &EditorState) -> EditCommand {

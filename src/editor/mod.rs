@@ -12,7 +12,7 @@ use std::io;
 
 use crate::terminal::{events::{Event::{self, Key}, KeyCode::Esc}, reader::read_event};
 
-use events::{UndoRedo::*, cursor_command, edit_command, scroll_command, undo_redo_command};
+use events::{cursor_command, edit_command, is_redo, is_undo, scroll_command};
 use state::EditorState;
 
 
@@ -51,11 +51,11 @@ impl Editor {
             state.scroll(scroll_to)
         );
 
-        if let Some(cmd) = undo_redo_command(&event) {
-            match cmd {
-                Undo => state.undo(),
-                Redo => state.redo(),
-            }
+        if is_undo(&event) {
+            state.undo();
+        }
+        if is_redo(&event) {
+            state.redo();
         }
 
         edit_command(&event, state).map(|edit_op| state.edit(edit_op));
