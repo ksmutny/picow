@@ -55,30 +55,22 @@ fn detect_line_delimiter(file_content: &str) -> &str {
 
 #[cfg(test)]
 mod test {
-    use crate::{s, vecr};
+    use crate::vecr;
     use super::{*, super::row::Row};
 
-    #[test]
-    fn split_crlf() {
-        let text = "Hello\r\nWorld\r\n";
-        let (lines, delimiter) = split(text);
-        assert_eq!(lines, vecr!["Hello", "World", ""]);
-        assert_eq!(delimiter, s!(CRLF));
+    macro_rules! test_split {
+        ($name:ident, $text:expr, $lines:expr, $delimiter:expr) => {
+            #[test]
+            fn $name() {
+                let (lines, delimiter) = split($text);
+                assert_eq!(lines, $lines);
+                assert_eq!(delimiter, $delimiter);
+            }
+        };
     }
 
-    #[test]
-    fn split_cr() {
-        let text = "Hello\rWorld\r";
-        let (lines, delimiter) = split(text);
-        assert_eq!(lines, vecr!["Hello", "World", ""]);
-        assert_eq!(delimiter, s!(CR));
-    }
-
-    #[test]
-    fn split_lf() {
-        let text = "Hello\nWorld\n";
-        let (lines, delimiter) = split(text);
-        assert_eq!(lines, vecr!["Hello", "World", ""]);
-        assert_eq!(delimiter, s!(LF));
-    }
+    test_split! { split_empty, "", vecr![""], LF }
+    test_split! { split_crlf, "Hello\r\nWorld\r\n", vecr!["Hello", "World", ""], CRLF }
+    test_split! { split_cr, "Hello\rWonderful\rWorld", vecr!["Hello", "Wonderful", "World"], CR }
+    test_split! { split_lf, "Hello\nWorld\n", vecr!["Hello", "World", ""], LF }
 }
