@@ -13,7 +13,7 @@ use std::{collections::LinkedList, io};
 use crate::terminal::{events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT}, reader::read_event};
 
 use self::{
-    content::PosInDocument, edit::EditOp, state::EditorState //, viewport::ViewportDimensions
+    content::PosInDocument, cursor::NavigationCommand, edit::EditOp, state::EditorState, viewport::ScrollCommand
 };
 
 
@@ -50,9 +50,31 @@ impl Editor {
     }
 
     pub fn process_event(&mut self, event: Event) {
-        let EditorState { ref cursor, ref content, ref viewport, .. } = self.state;
+        let (cursor_command, is_selection) = Self::cursor_command(&event, &self.state);
+        let scroll_command = Self::scroll_command(&event, &self.state);
 
-        let cursor_command = match event {
+        self.state.move_cursor(cursor_command, is_selection);
+        self.state.scroll(scroll_command);
+
+        match event {
+            Key(ref key, modifiers) => match (key, modifiers) {
+                (Char(c), 0) => self.insert_char(*c),
+                (Enter, 0) => self.insert_char('\n'),
+                (Backspace, 0) => self.backspace(),
+                (Delete, 0) => self.delete_char(),
+                (Char('Y'), CTRL) => self.redo(),
+                (Char('Z'), CTRL) => self.undo(),
+                _ => {}
+            },
+            Paste(s) => self.insert(&s),
+            _ => {}
+        }
+    }
+
+    fn cursor_command(event: &Event, state: &EditorState) -> (NavigationCommand, bool) {
+        let EditorState { ref cursor, ref content, ref viewport, .. } = state;
+
+        let cursor_command = match *event {
             Key(ref key, modifiers) => match (key, modifiers) {
                 (Home, 0 | SHIFT) => cursor.move_line_start(content),
                 (End, 0 | SHIFT) => cursor.move_line_end(content),
@@ -77,27 +99,16 @@ impl Editor {
             _ => false
         };
 
-        let scroll_command = match event {
+        (cursor_command, is_selection)
+    }
+
+    fn scroll_command(event: &Event, state: &EditorState) -> ScrollCommand {
+        let EditorState { ref content, ref viewport, .. } = state;
+
+        match event {
             Key(Up, CTRL) | Mouse(WheelUp(_, _)) => viewport.scroll_up(1),
             Key(Down, CTRL) | Mouse(WheelDown(_, _)) => viewport.scroll_down(1, content.last_line_row()),
             _ => None
-        };
-
-        self.state.move_cursor(cursor_command, is_selection);
-        self.state.scroll(scroll_command);
-
-        match event {
-            Key(ref key, modifiers) => match (key, modifiers) {
-                (Char(c), 0) => self.insert_char(*c),
-                (Enter, 0) => self.insert_char('\n'),
-                (Backspace, 0) => self.backspace(),
-                (Delete, 0) => self.delete_char(),
-                (Char('Y'), CTRL) => self.redo(),
-                (Char('Z'), CTRL) => self.undo(),
-                _ => {}
-            },
-            Paste(s) => self.insert(&s),
-            _ => {}
         }
     }
 
