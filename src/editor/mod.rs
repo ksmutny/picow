@@ -12,7 +12,7 @@ use std::{collections::LinkedList, io};
 
 use crate::terminal::{events::{Event::{self, *}, KeyCode::*, CTRL}, reader::read_event};
 
-use self::{edit::EditOp, state::EditorState};
+use self::{edit::EditOp, events::{cursor_command, edit_command, scroll_command}, state::EditorState};
 
 
 enum UndoRedo {
@@ -54,11 +54,11 @@ impl Editor {
     }
 
     pub fn process_event(&mut self, event: Event) {
-        Self::cursor_command(&event, &self.state).map(|(cursor, is_selection)|
+        cursor_command(&event, &self.state).map(|(cursor, is_selection)|
             self.state.move_cursor(cursor, is_selection)
         );
 
-        Self::scroll_command(&event, &self.state).map(|scroll_to|
+        scroll_command(&event, &self.state).map(|scroll_to|
             self.state.scroll(scroll_to)
         );
 
@@ -69,7 +69,7 @@ impl Editor {
             }
         }
 
-        Self::edit_command(&event, &self.state).map(|edit_op| self.process(edit_op));
+        edit_command(&event, &self.state).map(|edit_op| self.process(edit_op));
     }
 
     fn undo_redo_command(event: &Event) -> UndoRedoCommand {
