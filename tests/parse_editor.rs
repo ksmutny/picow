@@ -10,10 +10,12 @@ pub struct TestCase {
     pub editor: Editor,
     pub expected_cursor: PosInDocument,
     pub expected_scroll: PosInDocument,
+    pub expected_selection: Option<PosInDocument>,
 }
 
 pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let mut lines = Vec::new();
+    let mut has_selection = false;
     let mut eof_found = false;
     let mut eof_reached = false;
     let mut viewport_size: ViewportDimensions = (0, 0);
@@ -69,6 +71,10 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             eof_found = true;
         }
 
+        if line.contains('▬') {
+            has_selection = true;
+        }
+
         if !eof_reached {
             let processed_line = line
                 .replace(['▮', '┘'], if line.contains('.') || line.contains('☼') { " " } else { "_" } )
@@ -102,7 +108,8 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
             )
         ),
         expected_cursor: expected_cursor.unwrap(),
-        expected_scroll: expected_scroll.unwrap()
+        expected_scroll: expected_scroll.unwrap(),
+        expected_selection: if has_selection { Some(cursor_pos) } else { None }
     }
 }
 

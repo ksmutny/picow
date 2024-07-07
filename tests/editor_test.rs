@@ -281,3 +281,30 @@ mod move_horizoval {
         "└───────────┘"
     );
 }
+
+mod selection {
+    use picow::terminal::events::{Event::*,KeyCode::*, SHIFT};
+    use super::parse_editor::parse_test_case;
+
+    test_editor!(
+        start_selection
+        Key(Right, SHIFT),
+        Key(Right, SHIFT),
+        Key(Right, SHIFT);
+        "┌───────────┐",
+        "▮▬▬▯___     │",
+        "│______     │",
+        "└───────────┘"
+    );
+
+    test_editor!(
+        interrupt_selection
+        Key(Right, SHIFT),
+        Key(Right, SHIFT),
+        Key(Right, 0);
+        "┌───────────┐",
+        "▮__▯___     │",
+        "│______     │",
+        "└───────────┘"
+    );
+}

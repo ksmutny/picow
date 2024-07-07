@@ -59,11 +59,18 @@ fn render_status_bar(state: &EditorState, commands: &mut CommandBuffer) {
     let Viewport { top, width, height, .. } = state.viewport;
     let (row, col) = state.cursor.pos();
 
-    let status = format!("{}x{} | {} {} | {} | {}", width, height, row + 1, col + 1, top + 1, delimiter_label(&state.content.delimiter));
+    let status = format!("{}x{} | {} {} | {} | {} | {}", width, height, row + 1, col + 1, top + 1, delimiter_label(&state.content.delimiter), render_selection(&state));
 
     commands.queue(MoveTo(1, state.viewport.height + 1));
     commands.queue(ClearLine);
     commands.queue(Print(status));
+}
+
+fn render_selection(state: &EditorState) -> String {
+    match state.selection_pos {
+        Some((col, row)) => format!("{} {}", col, row),
+        None => "-".to_string()
+    }
 }
 
 fn hide_cursor(commands: &mut CommandBuffer) {
