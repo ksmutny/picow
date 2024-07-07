@@ -1,58 +1,47 @@
-use std::io;
+use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT};
 
-use crate::terminal::{
-    ansi_in::parse,
-    events::{Event::*, KeyCode::*, Mouse::*},
-    reader::{read_cmd, StdinReader}
-};
-
-use super::Editor;
+use super::{Editor, cursor::NavigationCommand, state::EditorState, viewport::ScrollCommand};
 
 
 impl Editor {
-    pub fn event_loop_dummy(&mut self) -> io::Result<()> {
-        let mut stdin = StdinReader::new();
+    pub fn cursor_command(event: &Event, state: &EditorState) -> (NavigationCommand, bool) {
+        let EditorState { ref cursor, ref content, ref viewport, .. } = state;
 
-        loop {
-            let input = read_cmd(&mut stdin)?;
-            println!("{:?}", input);
+        let cursor_command = match *event {
+            Key(ref key, modifiers) => match (key, modifiers) {
+                (Home, 0 | SHIFT) => cursor.move_line_start(content),
+                (End, 0 | SHIFT) => cursor.move_line_end(content),
+                (Up, 0 | SHIFT) => cursor.move_up(content, 1),
+                (Down, 0 | SHIFT) => cursor.move_down(content, 1),
+                (Right, 0 | SHIFT) => cursor.move_right(content),
+                (Left, 0 | SHIFT) => cursor.move_left(content),
+                (PageDown, 0 | SHIFT) => cursor.move_down(content, viewport.height as usize - 1),
+                (PageUp, 0 | SHIFT) => cursor.move_up(content, viewport.height as usize - 1),
 
-            match parse(&input) {
-                Ok((_, event)) => match event {
-                    Key(key, m) => {
-                        match key {
-                            Esc => break Ok(()),
-                            Enter => print!("Enter"),
-                            Backspace => print!("Backspace"),
-                            Tab => print!("Tab"),
-                            Insert => print!("Insert"),
-                            Delete => print!("Delete"),
-                            Home => print!("Home"),
-                            End => print!("End"),
-                            PageUp => print!("Page up"),
-                            PageDown => print!("Page down"),
-                            Up => print!("Arrow up"),
-                            Down => print!("Arrow down"),
-                            Right => print!("Arrow right"),
-                            Left => print!("Arrow left"),
-                            Char(c) => print!("Char: {} {}", c, c as u32),
-                        }
-                        println!(", Modifiers: {}", m)
-                    },
-                    Mouse(mouse) => match mouse {
-                        Button(button, event, x, y) => println!("{:?}: {:?} at ({}, {})", event, button, x, y),
-                        WheelUp(x, y) => println!("Wheel up at ({}, {})", x, y),
-                        WheelDown(x, y) => println!("Wheel down at ({}, {})", x, y),
-                    },
-                    Paste(s) => {
-                        let lines = s.split("\r");
-                        for line in lines {
-                            println!("Paste: {}", line);
-                        }
-                    },
-                },
-                Err(err) => eprintln!("Parse error: {}", err),
-            }
+                (Home, CTRL) => cursor.move_document_start(content),
+                (End, CTRL) => cursor.move_document_end(content),
+
+                _ => None
+            },
+            Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.move_to(content, viewport.to_absolute((row, column))),
+            _ => None
+        };
+
+        let is_selection = match event {
+            Key(_, SHIFT) if cursor_command.is_some() => true,
+            _ => false
+        };
+
+        (cursor_command, is_selection)
+    }
+
+    pub fn scroll_command(event: &Event, state: &EditorState) -> ScrollCommand {
+        let EditorState { ref content, ref viewport, .. } = state;
+
+        match event {
+            Key(Up, CTRL) | Mouse(WheelUp(_, _)) => viewport.scroll_up(1),
+            Key(Down, CTRL) | Mouse(WheelDown(_, _)) => viewport.scroll_down(1, content.last_line_row()),
+            _ => None
         }
     }
 }
