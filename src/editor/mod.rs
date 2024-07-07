@@ -15,6 +15,12 @@ use crate::terminal::{events::{Event::{self, *}, KeyCode::*, CTRL}, reader::read
 use self::{content::PosInDocument, edit::EditOp, state::EditorState};
 
 
+enum UndoRedo {
+    Undo,
+    Redo,
+}
+type UndoRedoCommand = Option<UndoRedo>;
+
 pub struct Editor {
     pub state: EditorState,
     undo_stack: LinkedList<EditOp>,
@@ -54,18 +60,31 @@ impl Editor {
         self.state.move_cursor(cursor_command, is_selection);
         self.state.scroll(scroll_command);
 
+        if let Some(cmd) = Self::undo_redo_command(&event) {
+            match cmd {
+                UndoRedo::Undo => self.undo(),
+                UndoRedo::Redo => self.redo(),
+            }
+        }
+
         match event {
             Key(ref key, modifiers) => match (key, modifiers) {
                 (Char(c), 0) => self.insert_char(*c),
                 (Enter, 0) => self.insert_char('\n'),
                 (Backspace, 0) => self.backspace(),
                 (Delete, 0) => self.delete_char(),
-                (Char('Y'), CTRL) => self.redo(),
-                (Char('Z'), CTRL) => self.undo(),
                 _ => {}
             },
             Paste(s) => self.insert(&s),
             _ => {}
+        }
+    }
+
+    fn undo_redo_command(event: &Event) -> UndoRedoCommand {
+        match event {
+            Key(Char('Y'), CTRL) => Some(UndoRedo::Redo),
+            Key(Char('Z'), CTRL) => Some(UndoRedo::Undo),
+            _ => None
         }
     }
 
