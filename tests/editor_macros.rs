@@ -8,12 +8,12 @@ macro_rules! test_editor {
             let events = vec![$($event),*];
 
             events.into_iter().for_each(|event| {
-                process_event(event, &mut test_case.editor.state);
+                process_event(event, &mut test_case.state);
             });
 
-            assert_eq!(test_case.editor.state.cursor.pos(), test_case.expected_cursor);
-            assert_eq!(test_case.editor.state.viewport.pos(), test_case.expected_scroll);
-            assert_eq!(test_case.editor.state.selection_pos, test_case.expected_selection);
+            assert_eq!(test_case.state.cursor.pos(), test_case.expected_cursor);
+            assert_eq!(test_case.state.viewport.pos(), test_case.expected_scroll);
+            assert_eq!(test_case.state.selection_pos, test_case.expected_selection);
         }
     };
 }

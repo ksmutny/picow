@@ -3,11 +3,11 @@
 mod editor_macros;
 
 use picow::editor::{
-    content::{EditorContent, PosInDocument}, state::EditorState, viewport::{Viewport, ViewportDimensions}, Editor, row::Row
+    content::{EditorContent, PosInDocument}, state::EditorState, viewport::{Viewport, ViewportDimensions}, row::Row
 };
 
 pub struct TestCase {
-    pub editor: Editor,
+    pub state: EditorState,
     pub expected_cursor: PosInDocument,
     pub expected_scroll: PosInDocument,
     pub expected_selection: Option<PosInDocument>,
@@ -100,12 +100,10 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
     let (width, height) = viewport_size;
 
     TestCase {
-        editor: Editor::new(
-            EditorState::new(
-                EditorContent::new(lines, "\n".to_string()),
-                Viewport::new(left, top, width, height),
-                cursor_pos
-            )
+        state: EditorState::new(
+            EditorContent::new(lines, "\n".to_string()),
+            Viewport::new(left, top, width, height),
+            cursor_pos
         ),
         expected_cursor: expected_cursor.unwrap(),
         expected_scroll: expected_scroll.unwrap(),
@@ -127,11 +125,10 @@ fn move_cursor_no_scroll() {
         "└───────────┘"  // 3
     ]);
 
-    let state = tc.editor.state;
-    assert_eq!(state.viewport.size(), (13, 4));
-    assert_eq!(state.cursor.pos(), (1, 6));
-    assert_eq!(state.viewport.pos(), (0, 0));
-    assert_eq!(state.content.lines, vecr![
+    assert_eq!(tc.state.viewport.size(), (13, 4));
+    assert_eq!(tc.state.cursor.pos(), (1, 6));
+    assert_eq!(tc.state.viewport.pos(), (0, 0));
+    assert_eq!(tc.state.content.lines, vecr![
         "______ ______",
         " ______",
         " ______",
@@ -152,8 +149,7 @@ fn no_move_cursor() {
         "└───────────┘"  // 3
     ]);
 
-    let state = tc.editor.state;
-    assert_eq!(state.cursor.pos(), (1, 6));
+    assert_eq!(tc.state.cursor.pos(), (1, 6));
     assert_eq!(tc.expected_cursor, (1, 6));
 }
 
@@ -168,8 +164,7 @@ fn cursor_top_left() {
         "└───────────┘"  // 4
     ]);
 
-    let state = tc.editor.state;
-    assert_eq!(state.cursor.pos(), (1, 0));
+    assert_eq!(tc.state.cursor.pos(), (1, 0));
 }
 
 #[test]
@@ -184,11 +179,10 @@ fn move_cursor_and_scroll() {
         "_________ └───────────┘"           // 5
     ]);
 
-    let state = tc.editor.state;
-    assert_eq!(state.viewport.size(), (13, 4));
-    assert_eq!(state.cursor.pos(), (3, 16));
-    assert_eq!(state.viewport.pos(), (2, 10));
-    assert_eq!(state.content.lines, vecr![
+    assert_eq!(tc.state.viewport.size(), (13, 4));
+    assert_eq!(tc.state.cursor.pos(), (3, 16));
+    assert_eq!(tc.state.viewport.pos(), (2, 10));
+    assert_eq!(tc.state.content.lines, vecr![
         "_________ ______ ___",
         "_________ __________________",
         "_________ _____________", // 1
@@ -212,11 +206,10 @@ fn document_start() {
         "_└───────────┘"  // 4
     ]);
 
-    let state = tc.editor.state;
-    assert_eq!(state.viewport.size(), (13, 4));
-    assert_eq!(state.cursor.pos(), (3, 8));
-    assert_eq!(state.viewport.pos(), (1, 1));
-    assert_eq!(state.content.lines, vecr![
+    assert_eq!(tc.state.viewport.size(), (13, 4));
+    assert_eq!(tc.state.cursor.pos(), (3, 8));
+    assert_eq!(tc.state.viewport.pos(), (1, 1));
+    assert_eq!(tc.state.content.lines, vecr![
         " _____________",
         "______________",
         "_ _____",
@@ -237,14 +230,13 @@ fn eol() {
         "└───────────┘"
     ]);
 
-    let state = tc.editor.state;
-    assert_eq!(state.content.lines, vecr![
+    assert_eq!(tc.state.content.lines, vecr![
     //   01234567890123
         "_____________",
         " ______",
         "_____________"
     ]);
-    assert_eq!(state.cursor.pos(), (1, 7));
+    assert_eq!(tc.state.cursor.pos(), (1, 7));
 }
 
 #[test]
@@ -258,8 +250,7 @@ fn eof() {
         "└───────────┘"
     ]);
 
-    let state = tc.editor.state;
-    assert_eq!(state.content.lines, vecr![
+    assert_eq!(tc.state.content.lines, vecr![
         "_____________",
         " _____",
         " _______",

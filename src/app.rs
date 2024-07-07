@@ -1,7 +1,7 @@
 use std::{fs, io};
 
 use crate::{
-    editor::{content::EditorContent, state::EditorState, viewport::Viewport, Editor},
+    editor::{content::EditorContent, event_loop, state::EditorState, viewport::Viewport},
     terminal::{self, buffer::CommandExecutor, commands::Command::*}
 };
 
@@ -36,10 +36,8 @@ fn init(file_name: &str) -> io::Result<u32> {
 }
 
 fn run_editor(content: EditorContent) -> io::Result<()> {
-    let state = EditorState::new(content, create_viewport().unwrap(), (0, 0));
-    let mut editor = Editor::new(state);
-
-    editor.event_loop()
+    let mut state = EditorState::new(content, create_viewport().unwrap(), (0, 0));
+    event_loop(&mut state)
 }
 
 fn create_viewport() -> io::Result<Viewport> {

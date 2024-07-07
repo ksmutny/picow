@@ -16,24 +16,14 @@ use events::process_event;
 use state::EditorState;
 
 
-pub struct Editor {
-    pub state: EditorState,
-}
+pub fn event_loop(state: &mut EditorState) -> io::Result<()> {
+    let mut rerender_content = true;
+    loop {
+        renderer::render(&state, rerender_content)?;
 
-impl Editor {
-    pub fn new(state: EditorState) -> Self {
-        Self { state }
-    }
-
-    pub fn event_loop(&mut self) -> io::Result<()> {
-        let mut rerender_content = true;
-        loop {
-            renderer::render(&self.state, rerender_content)?;
-
-            match read_event()? {
-                Key(Esc, 0) => break Ok(()),
-                event => rerender_content = process_event(event, &mut self.state)
-            }
+        match read_event()? {
+            Key(Esc, 0) => break Ok(()),
+            event => rerender_content = process_event(event, state)
         }
     }
 }
