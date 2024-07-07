@@ -73,13 +73,20 @@ type EditCommand = Option<EditOp>;
 
 fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
     let EditorState { ref content, ref cursor, .. } = state;
+    let selection = state.selection();
 
     match event {
         Key(ref key, modifiers) => match (key, modifiers) {
             (Char(c), 0) => insert_char(cursor, *c),
             (Enter, 0) => insert_char(cursor, '\n'),
-            (Backspace, 0) => backspace(cursor, content),
-            (Delete, 0) => delete_char(cursor, content),
+            (Backspace, 0) => match selection {
+                Some((from, to)) => delete_selection((from, to), content),
+                None => backspace(cursor, content)
+            },
+            (Delete, 0) => match selection {
+                Some((from, to)) => delete_selection((from, to), content),
+                None => delete_char(cursor, content)
+            },
             _ => None
         },
         Paste(s) => insert(cursor, &s),
@@ -95,6 +102,10 @@ fn delete_char(cursor: &Cursor, content: &EditorContent) -> EditCommand {
     cursor.move_right(content).and_then(|cursor_right| {
         delete(cursor.pos(), cursor_right.pos(), content)
     })
+}
+
+fn delete_selection((selection_from, selection_to): (PosInDocument, PosInDocument), content: &EditorContent) -> EditCommand {
+    delete(selection_from, selection_to, content)
 }
 
 fn backspace(cursor: &Cursor, content: &EditorContent) -> EditCommand {
