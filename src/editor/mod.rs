@@ -21,6 +21,8 @@ enum UndoRedo {
 }
 type UndoRedoCommand = Option<UndoRedo>;
 
+type EditCommand = Option<EditOp>;
+
 pub struct Editor {
     pub state: EditorState,
     undo_stack: LinkedList<EditOp>,
@@ -67,7 +69,7 @@ impl Editor {
             }
         }
 
-        self.edit_command(&event);
+        self.edit_command(&event).map(|edit_op| self.process(edit_op));
     }
 
     fn undo_redo_command(event: &Event) -> UndoRedoCommand {
@@ -78,17 +80,17 @@ impl Editor {
         }
     }
 
-    fn edit_command(&mut self, event: &Event)  {
+    fn edit_command(&mut self, event: &Event) -> EditCommand {
         match event {
             Key(ref key, modifiers) => match (key, modifiers) {
                 (Char(c), 0) => self.insert_char(*c),
                 (Enter, 0) => self.insert_char('\n'),
                 (Backspace, 0) => self.backspace(),
                 (Delete, 0) => self.delete_char(),
-                _ => {}
+                _ => None
             },
             Paste(s) => self.insert(&s),
-            _ => {}
+            _ => None
         }
     }
 
@@ -97,28 +99,28 @@ impl Editor {
     //     self.state.mark_for_refresh()
     // }
 
-    fn insert_char(&mut self, c: char) {
-        self.insert(&c.to_string());
+    fn insert_char(&mut self, c: char) -> EditCommand {
+        self.insert(&c.to_string())
     }
 
-    fn delete_char(&mut self) {
-        if let Some(cursor) = self.state.cursor.move_right(&self.state.content) {
+    fn delete_char(&mut self) -> EditCommand {
+        self.state.cursor.move_right(&self.state.content).and_then(|cursor| {
             self.delete(self.state.cursor.pos(), cursor.pos())
-        }
+        })
     }
 
-    fn backspace(&mut self) {
-        if let Some(cursor) = self.state.cursor.move_left(&self.state.content) {
+    fn backspace(&mut self) -> EditCommand {
+        self.state.cursor.move_left(&self.state.content).and_then(|cursor| {
             self.delete(cursor.pos(), self.state.cursor.pos())
-        }
+        })
     }
 
-    fn insert(&mut self, str: &str) {
-        self.process(EditOp::insert(self.state.cursor.pos(), str))
+    fn insert(&mut self, str: &str) -> EditCommand {
+        Some(EditOp::insert(self.state.cursor.pos(), str))
     }
 
-    fn delete(&mut self, from: PosInDocument, to: PosInDocument) {
-        self.process(EditOp::delete(&self.state.content, from, to))
+    fn delete(&mut self, from: PosInDocument, to: PosInDocument) -> EditCommand {
+        Some(EditOp::delete(&self.state.content, from, to))
     }
 
     fn process(&mut self, op: EditOp) {
