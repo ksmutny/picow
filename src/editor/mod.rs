@@ -67,7 +67,7 @@ impl Editor {
             }
         }
 
-        self.edit_command(&event).map(|edit_op| self.process(edit_op));
+        Self::edit_command(&event, &self.state).map(|edit_op| self.process(edit_op));
     }
 
     fn undo_redo_command(event: &Event) -> UndoRedoCommand {

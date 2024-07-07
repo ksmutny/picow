@@ -1,6 +1,6 @@
 use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT};
 
-use super::{content::PosInDocument, cursor::NavigationCommand, edit::{EditCommand, EditOp}, state::EditorState, viewport::ScrollCommand, Editor};
+use super::{content::{EditorContent, PosInDocument}, cursor::{Cursor, NavigationCommand}, edit::{EditCommand, EditOp}, state::EditorState, viewport::ScrollCommand, Editor};
 
 
 impl Editor {
@@ -45,41 +45,43 @@ impl Editor {
         }
     }
 
-    pub fn edit_command(&mut self, event: &Event) -> EditCommand {
+    pub fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
+        let EditorState { ref content, ref cursor, .. } = state;
+
         match event {
             Key(ref key, modifiers) => match (key, modifiers) {
-                (Char(c), 0) => self.insert_char(*c),
-                (Enter, 0) => self.insert_char('\n'),
-                (Backspace, 0) => self.backspace(),
-                (Delete, 0) => self.delete_char(),
+                (Char(c), 0) => insert_char(cursor, *c),
+                (Enter, 0) => insert_char(cursor, '\n'),
+                (Backspace, 0) => backspace(cursor, content),
+                (Delete, 0) => delete_char(cursor, content),
                 _ => None
             },
-            Paste(s) => self.insert(&s),
+            Paste(s) => insert(cursor, &s),
             _ => None
         }
     }
+}
 
-    fn insert_char(&mut self, c: char) -> EditCommand {
-        self.insert(&c.to_string())
-    }
+fn insert_char(cursor: &Cursor, c: char) -> EditCommand {
+    insert(cursor, &c.to_string())
+}
 
-    fn delete_char(&mut self) -> EditCommand {
-        self.state.cursor.move_right(&self.state.content).and_then(|cursor| {
-            self.delete(self.state.cursor.pos(), cursor.pos())
-        })
-    }
+fn delete_char(cursor: &Cursor, content: &EditorContent) -> EditCommand {
+    cursor.move_right(content).and_then(|cursor_right| {
+        delete(cursor.pos(), cursor_right.pos(), content)
+    })
+}
 
-    fn backspace(&mut self) -> EditCommand {
-        self.state.cursor.move_left(&self.state.content).and_then(|cursor| {
-            self.delete(cursor.pos(), self.state.cursor.pos())
-        })
-    }
+fn backspace(cursor: &Cursor, content: &EditorContent) -> EditCommand {
+    cursor.move_left(content).and_then(|cursor_left| {
+        delete(cursor_left.pos(), cursor.pos(), content)
+    })
+}
 
-    fn insert(&mut self, str: &str) -> EditCommand {
-        Some(EditOp::insert(self.state.cursor.pos(), str))
-    }
+fn insert(cursor: &Cursor, str: &str) -> EditCommand {
+    Some(EditOp::insert(cursor.pos(), str))
+}
 
-    fn delete(&mut self, from: PosInDocument, to: PosInDocument) -> EditCommand {
-        Some(EditOp::delete(&self.state.content, from, to))
-    }
+fn delete(from: PosInDocument, to: PosInDocument, content: &EditorContent) -> EditCommand {
+    Some(EditOp::delete(content, from, to))
 }
