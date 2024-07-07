@@ -41,9 +41,4 @@ impl Editor {
         self.state.mark_rendered();
         Ok(())
     }
-
-    // fn resize(&mut self, (width, height): ViewportDimensions) {
-    //     self.state.viewport.resize(width, height);
-    //     self.state.mark_for_refresh()
-    // }
 }
