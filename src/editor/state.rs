@@ -77,16 +77,20 @@ impl EditorState {
     }
 
     pub fn undo(&mut self) -> ReRenderContent {
-        self.undo_stack.pop_front().map(|edit_op| {
-            self.process(&edit_op.inverse());
-            self.redo_stack.push_front(edit_op)
-        }).is_some()
+        self.undo_stack.pop_front()
+            .map(|edit_op| {
+                self.process(&edit_op.inverse());
+                self.redo_stack.push_front(edit_op)
+            })
+            .is_some()
     }
 
     pub fn redo(&mut self) -> ReRenderContent {
-        self.redo_stack.pop_front().map(|edit_op| {
-            self.process(&edit_op);
-            self.undo_stack.push_front(edit_op)
-        }).is_some()
+        self.redo_stack.pop_front()
+            .map(|edit_op| {
+                self.process(&edit_op);
+                self.undo_stack.push_front(edit_op)
+            })
+            .is_some()
     }
 }
