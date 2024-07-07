@@ -1,11 +1,31 @@
 use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT};
 
-use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::{EditCommand, EditOp}, state::EditorState, viewport::ScrollCommand};
+use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::EditOp, state::EditorState, viewport::ScrollCommand};
 
 
-pub type CursorCommand = Option<(Cursor, bool)>;
+pub fn process_event(event: Event, state: &mut EditorState) {
+    cursor_command(&event, state).map(|(cursor, is_selection)|
+        state.move_cursor(cursor, is_selection)
+    );
 
-pub fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
+    scroll_command(&event, state).map(|scroll_to|
+        state.scroll(scroll_to)
+    );
+
+    if is_undo(&event) {
+        state.undo();
+    }
+    if is_redo(&event) {
+        state.redo();
+    }
+
+    edit_command(&event, state).map(|edit_op| state.edit(edit_op));
+}
+
+
+type CursorCommand = Option<(Cursor, bool)>;
+
+fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
     let EditorState { ref cursor, ref content, ref viewport, .. } = state;
 
     let cursor_command = match *event {
@@ -31,7 +51,8 @@ pub fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
     cursor_command.map(|cursor| (cursor, matches!(event, Key(_, SHIFT))))
 }
 
-pub fn scroll_command(event: &Event, state: &EditorState) -> ScrollCommand {
+
+fn scroll_command(event: &Event, state: &EditorState) -> ScrollCommand {
     let EditorState { ref content, ref viewport, .. } = state;
 
     match event {
@@ -41,15 +62,19 @@ pub fn scroll_command(event: &Event, state: &EditorState) -> ScrollCommand {
     }
 }
 
-pub fn is_undo(event: &Event) -> bool {
+
+fn is_undo(event: &Event) -> bool {
     matches!(event, Key(Char('Z'), CTRL))
 }
 
-pub fn is_redo(event: &Event) -> bool {
+fn is_redo(event: &Event) -> bool {
     matches!(event, Key(Char('Y'), CTRL))
 }
 
-pub fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
+
+type EditCommand = Option<EditOp>;
+
+fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
     let EditorState { ref content, ref cursor, .. } = state;
 
     match event {
