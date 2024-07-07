@@ -54,21 +54,34 @@ mod edit_test {
         assert_eq!(state.cursor.pos(), cursor);
     }
 
-    #[test]
-    fn test_insert_char() {
-        let mut state = state(vec!["H▮llo"]);
+    macro_rules! edit_test {
+        ($name:ident, $($line_in:expr),*; $($event:expr),*; $($line_exp:expr),*) => {
+            #[test]
+            fn $name() {
+                let mut state = state(vec![$($line_in),*]);
+                let events = vec![$($event),*];
 
-        process_event(&Key(Char('e'), 0), &mut state);
+                events.into_iter().for_each(|event| {
+                    process_event(&event, &mut state);
+                });
 
-        assert(&state, vec!["He▮llo"]);
+                assert(&state, vec![$($line_exp),*]);
+            }
+        };
     }
 
-    #[test]
-    fn test_insert_lf() {
-        let mut state = state(vec!["Hello▮World"]);
+    edit_test!(
+        test_insert_char,
+        "H▮llo";
+        Key(Char('e'), 0);
+        "He▮llo"
+    );
 
-        process_event(&Key(Char('\n'), 0), &mut state);
-
-        assert(&state, vec!["Hello", "▮World"]);
-    }
+    edit_test!(
+        test_insert_lf,
+        "Hello▮World";
+        Key(Char('\n'), 0);
+        "Hello",
+        "▮World"
+    );
 }
