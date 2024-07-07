@@ -67,6 +67,18 @@ impl Editor {
             }
         }
 
+        self.edit_command(&event);
+    }
+
+    fn undo_redo_command(event: &Event) -> UndoRedoCommand {
+        match event {
+            Key(Char('Y'), CTRL) => Some(UndoRedo::Redo),
+            Key(Char('Z'), CTRL) => Some(UndoRedo::Undo),
+            _ => None
+        }
+    }
+
+    fn edit_command(&mut self, event: &Event)  {
         match event {
             Key(ref key, modifiers) => match (key, modifiers) {
                 (Char(c), 0) => self.insert_char(*c),
@@ -77,14 +89,6 @@ impl Editor {
             },
             Paste(s) => self.insert(&s),
             _ => {}
-        }
-    }
-
-    fn undo_redo_command(event: &Event) -> UndoRedoCommand {
-        match event {
-            Key(Char('Y'), CTRL) => Some(UndoRedo::Redo),
-            Key(Char('Z'), CTRL) => Some(UndoRedo::Undo),
-            _ => None
         }
     }
 
