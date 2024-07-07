@@ -10,16 +10,10 @@ pub mod macros;
 
 use std::{collections::LinkedList, io};
 
-use crate::terminal::{events::{Event::{self, *}, KeyCode::*, CTRL}, reader::read_event};
+use crate::terminal::{events::{Event::{self, Key}, KeyCode::Esc}, reader::read_event};
 
-use self::{edit::EditOp, events::{cursor_command, edit_command, scroll_command}, state::EditorState};
+use self::{edit::EditOp, events::{UndoRedo::*, cursor_command, edit_command, scroll_command, undo_redo_command}, state::EditorState};
 
-
-enum UndoRedo {
-    Undo,
-    Redo,
-}
-type UndoRedoCommand = Option<UndoRedo>;
 
 pub struct Editor {
     pub state: EditorState,
@@ -62,22 +56,14 @@ impl Editor {
             self.state.scroll(scroll_to)
         );
 
-        if let Some(cmd) = Self::undo_redo_command(&event) {
+        if let Some(cmd) = undo_redo_command(&event) {
             match cmd {
-                UndoRedo::Undo => self.undo(),
-                UndoRedo::Redo => self.redo(),
+                Undo => self.undo(),
+                Redo => self.redo(),
             }
         }
 
         edit_command(&event, &self.state).map(|edit_op| self.process(edit_op));
-    }
-
-    fn undo_redo_command(event: &Event) -> UndoRedoCommand {
-        match event {
-            Key(Char('Y'), CTRL) => Some(UndoRedo::Redo),
-            Key(Char('Z'), CTRL) => Some(UndoRedo::Undo),
-            _ => None
-        }
     }
 
     // fn resize(&mut self, (width, height): ViewportDimensions) {
