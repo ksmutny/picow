@@ -1,10 +1,12 @@
 use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT};
 
-use super::{content::{EditorContent, PosInDocument}, cursor::{Cursor, NavigationCommand}, edit::{EditCommand, EditOp}, state::EditorState, viewport::ScrollCommand, Editor};
+use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::{EditCommand, EditOp}, state::EditorState, viewport::ScrollCommand, Editor};
 
+
+pub type CursorCommand = Option<(Cursor, bool)>;
 
 impl Editor {
-    pub fn cursor_command(event: &Event, state: &EditorState) -> (NavigationCommand, bool) {
+    pub fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
         let EditorState { ref cursor, ref content, ref viewport, .. } = state;
 
         let cursor_command = match *event {
@@ -27,12 +29,7 @@ impl Editor {
             _ => None
         };
 
-        let is_selection = match event {
-            Key(_, SHIFT) if cursor_command.is_some() => true,
-            _ => false
-        };
-
-        (cursor_command, is_selection)
+        cursor_command.map(|cursor| (cursor, matches!(event, Key(_, SHIFT))))
     }
 
     pub fn scroll_command(event: &Event, state: &EditorState) -> ScrollCommand {

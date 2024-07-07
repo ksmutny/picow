@@ -1,4 +1,4 @@
-use super::{content::{EditorContent, PosInDocument}, cursor::{Cursor, NavigationCommand}, edit::{self, EditOp, EditOpKind::*}, viewport::{ScrollCommand, Viewport}};
+use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, viewport::{ScrollCommand, Viewport}};
 
 
 pub struct EditorState {
@@ -19,23 +19,21 @@ impl EditorState {
     pub fn process(&mut self, op: &EditOp) {
         edit::process(&mut self.content, &op);
 
-        let cursor_cmd = Some(Cursor::from(match op.kind {
+        let cursor = Cursor::from(match op.kind {
             Insert => op.to(),
             Delete => op.from,
-        }));
+        });
 
-        self.move_cursor(cursor_cmd, false);
+        self.move_cursor(cursor, false);
 
         self.mark_for_render()
     }
 
-    pub fn move_cursor(&mut self, cursor_cmd: NavigationCommand, is_selection: bool) {
-        if let Some(cursor) = cursor_cmd {
-            self.update_selection(is_selection);
-            self.cursor = cursor;
-            let scroll_cmd = self.viewport.scroll_into_view(self.cursor.pos());
-            self.scroll(scroll_cmd)
-        }
+    pub fn move_cursor(&mut self, new_cursor: Cursor, is_selection: bool) {
+        self.update_selection(is_selection);
+        self.cursor = new_cursor;
+        let scroll_cmd = self.viewport.scroll_into_view(self.cursor.pos());
+        self.scroll(scroll_cmd)
     }
 
     fn update_selection(&mut self, is_selection: bool) {

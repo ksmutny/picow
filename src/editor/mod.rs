@@ -54,10 +54,11 @@ impl Editor {
     }
 
     pub fn process_event(&mut self, event: Event) {
-        let (cursor_command, is_selection) = Self::cursor_command(&event, &self.state);
-        let scroll_command = Self::scroll_command(&event, &self.state);
+        Self::cursor_command(&event, &self.state).map(|(cursor, is_selection)|
+            self.state.move_cursor(cursor, is_selection)
+        );
 
-        self.state.move_cursor(cursor_command, is_selection);
+        let scroll_command = Self::scroll_command(&event, &self.state);
         self.state.scroll(scroll_command);
 
         if let Some(cmd) = Self::undo_redo_command(&event) {
