@@ -1,6 +1,6 @@
 use std::collections::LinkedList;
 
-use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, viewport::Viewport};
+use super::{content::EditorContent, cursor::Cursor, edit::{self, EditOp, EditOpKind::*}, pos::PosInDocument, viewport::Viewport};
 
 
 pub struct EditorState {

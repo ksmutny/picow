@@ -4,6 +4,7 @@ pub mod edit;
 pub mod state;
 pub mod events;
 pub mod viewport;
+pub mod pos;
 pub mod renderer;
 pub mod row;
 pub mod macros;

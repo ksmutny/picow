@@ -1,6 +1,6 @@
 use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT};
 
-use super::{content::{EditorContent, PosInDocument}, cursor::Cursor, edit::EditOp, state::{EditorState, ReRenderContent}, viewport::ScrollCommand};
+use super::{content::EditorContent, cursor::Cursor, edit::EditOp, pos::PosInDocument, state::{EditorState, ReRenderContent}, viewport::ScrollCommand};
 
 
 pub fn process_event(event: Event, state: &mut EditorState) -> ReRenderContent {

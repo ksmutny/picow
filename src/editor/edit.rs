@@ -1,4 +1,4 @@
-use super::{content::{split, EditorContent, PosInDocument}, row::Row};
+use super::{content::{split, EditorContent}, pos::PosInDocument, row::Row};
 use EditOpKind::*;
 
 

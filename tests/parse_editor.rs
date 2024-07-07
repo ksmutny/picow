@@ -3,7 +3,7 @@
 mod editor_macros;
 
 use picow::editor::{
-    content::{EditorContent, PosInDocument}, state::EditorState, viewport::{Viewport, ViewportDimensions}, row::Row
+    content::EditorContent, pos::PosInDocument, row::Row, state::EditorState, viewport::{Viewport, ViewportDimensions}
 };
 
 pub struct TestCase {

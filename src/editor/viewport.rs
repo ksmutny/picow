@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use super::content::PosInDocument;
+use super::pos::PosInDocument;
 
 pub type PosOnScreen = (u16, u16);
 pub type ViewportDimensions = (u16, u16);
