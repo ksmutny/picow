@@ -8,26 +8,21 @@ pub mod renderer;
 pub mod row;
 pub mod macros;
 
-use std::{collections::LinkedList, io};
+use std::io;
 
 use crate::terminal::{events::{Event::{self, Key}, KeyCode::Esc}, reader::read_event};
 
-use self::{edit::EditOp, events::{UndoRedo::*, cursor_command, edit_command, scroll_command, undo_redo_command}, state::EditorState};
+use events::{UndoRedo::*, cursor_command, edit_command, scroll_command, undo_redo_command};
+use state::EditorState;
 
 
 pub struct Editor {
     pub state: EditorState,
-    undo_stack: LinkedList<EditOp>,
-    redo_stack: LinkedList<EditOp>,
 }
 
 impl Editor {
     pub fn new(state: EditorState) -> Self {
-        Self {
-            state,
-            undo_stack: LinkedList::new(),
-            redo_stack: LinkedList::new(),
-        }
+        Self { state }
     }
 
     pub fn event_loop(&mut self) -> io::Result<()> {
@@ -58,36 +53,16 @@ impl Editor {
 
         if let Some(cmd) = undo_redo_command(&event) {
             match cmd {
-                Undo => self.undo(),
-                Redo => self.redo(),
+                Undo => self.state.undo(),
+                Redo => self.state.redo(),
             }
         }
 
-        edit_command(&event, &self.state).map(|edit_op| self.process(edit_op));
+        edit_command(&event, &self.state).map(|edit_op| self.state.edit(edit_op));
     }
 
     // fn resize(&mut self, (width, height): ViewportDimensions) {
     //     self.state.viewport.resize(width, height);
     //     self.state.mark_for_refresh()
     // }
-
-    fn process(&mut self, op: EditOp) {
-        self.state.process(&op);
-        self.undo_stack.push_front(op);
-        self.redo_stack.clear()
-    }
-
-    fn undo(&mut self) {
-        if let Some(edit_op) = self.undo_stack.pop_front() {
-            self.state.process(&edit_op.inverse());
-            self.redo_stack.push_front(edit_op);
-        }
-    }
-
-    fn redo(&mut self) {
-        if let Some(edit_op) = self.redo_stack.pop_front() {
-            self.state.process(&edit_op);
-            self.undo_stack.push_front(edit_op);
-        }
-    }
 }
