@@ -7,7 +7,7 @@ mod edit_test {
     use super::edit_test_parse::{assert, state};
 
     use picow::editor::events::process_event;
-    use picow::terminal::events::{Event::{Key, Paste}, KeyCode::*};
+    use picow::terminal::events::{Event::{Key, Paste}, KeyCode::*, CTRL};
 
     edit_test!(
         test_insert_char:
@@ -85,5 +85,28 @@ mod edit_test {
         "▮Hello";
         Key(Backspace, 0);
         "▮Hello"
+    );
+
+    edit_test!(
+        undo:
+        "Hello▮";
+        Key(Char('H'), 0),
+        Key(Char('e'), 0),
+        Key(Char('y'), 0),
+        Key(Char('Z'), CTRL);
+        "HelloHe▮"
+    );
+
+    edit_test!(
+        redo:
+        "Hello▮";
+        Key(Char('H'), 0),
+        Key(Char('e'), 0),
+        Key(Char('y'), 0),
+        Key(Char('Z'), CTRL),
+        Key(Char('Z'), CTRL),
+        Key(Char('Z'), CTRL),
+        Key(Char('Y'), CTRL);
+        "HelloH▮"
     );
 }
