@@ -26,8 +26,15 @@ where
 
 fn render_content(state: &EditorState, commands: &mut CommandBuffer) {
     let selection = state.selection();
-    for (i, row) in visible_rows(state).iter().enumerate() {
+    let visible_rows = visible_rows(state);
+    let visible_rows_count = visible_rows.len();
+
+    for (i, row) in visible_rows.iter().enumerate() {
         render_row(i, row, &state.viewport, selection, commands)
+    }
+
+    for i in visible_rows_count..state.viewport.height as usize {
+        clear_row(i as u16 + 1, commands)
     }
 }
 
@@ -77,14 +84,18 @@ fn visible_row_part(i: usize, row: &Row, viewport: &Viewport, selection: Selecti
     }
 }
 
+fn clear_row(row: u16, commands: &mut CommandBuffer) {
+    commands.queue(MoveTo(1, row));
+    commands.queue(ClearLine);
+}
+
 fn render_status_bar(state: &EditorState, commands: &mut CommandBuffer) {
     let Viewport { top, width, height, .. } = state.viewport;
     let (row, col) = state.cursor.pos();
 
     let status = format!("{}x{} | {} {} | {} | {}", width, height, row + 1, col + 1, top + 1, delimiter_label(&state.content.delimiter));
 
-    commands.queue(MoveTo(1, state.viewport.height + 1));
-    commands.queue(ClearLine);
+    clear_row(state.viewport.height + 1, commands);
     commands.queue(Print(status));
 }
 
