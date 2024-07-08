@@ -81,7 +81,10 @@ fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
                 Some((from, to)) => replace_selection(content, from, to, &c.to_string()),
                 None => insert_char(cursor, *c)
             },
-            (Enter, 0) => insert_char(cursor, '\n'),
+            (Enter, 0) => match selection {
+                Some((from, to)) => replace_selection(content, from, to, "\n"),
+                None => insert_char(cursor, '\n')
+            },
             (Backspace, 0) => match selection {
                 Some((from, to)) => delete_selection((from, to), content),
                 None => backspace(cursor, content)
@@ -92,7 +95,10 @@ fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
             },
             _ => None
         },
-        Paste(s) => insert(cursor, &s),
+        Paste(s) => match selection {
+            Some((from, to)) => replace_selection(content, from, to, &s),
+            None => insert(cursor, &s)
+        },
         _ => None
     }
 }
