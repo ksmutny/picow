@@ -1,3 +1,4 @@
+pub mod clipboard;
 pub mod content;
 pub mod cursor;
 pub mod edit;
