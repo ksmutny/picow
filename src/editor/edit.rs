@@ -14,14 +14,14 @@ impl EditOp {
     }
 
     pub fn delete(content: &EditorContent, from: PosInDocument, to: PosInDocument) -> Self {
-        Delete { from, lines: Self::lines_to_delete(&content, from, to) }
+        Delete { from, lines: content.selection(from, to) }
     }
 
     pub fn replace(content: &EditorContent, from: PosInDocument, to: PosInDocument, str: &str) -> Self {
         Replace {
             from,
             inserted_lines: Self::lines_to_insert(str),
-            deleted_lines: Self::lines_to_delete(content, from, to)
+            deleted_lines: content.selection(from, to)
         }
     }
 
@@ -39,21 +39,6 @@ impl EditOp {
 
     fn lines_to_insert(str: &str) -> Vec<Row> {
         split(str).0
-    }
-
-    pub fn lines_to_delete(content: &EditorContent, (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Vec<Row> {
-        let mut lines_to_delete = Vec::new();
-        let mut push = |line: &str| lines_to_delete.push(Row::new(line));
-
-        if from_row == to_row {
-            push(&content.lines[from_row][from_col..to_col]);
-        } else {
-            push(&content.lines[from_row][from_col..]);
-            content.lines[from_row + 1..to_row].iter().for_each(|line| push(&line[..]));
-            push(&content.lines[to_row][..to_col]);
-        };
-
-        lines_to_delete
     }
 
     pub fn to(&self) -> PosInDocument {

@@ -1,6 +1,6 @@
 use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT};
 
-use super::{clipboard::copy_to_clipboard, content::EditorContent, cursor::Cursor, edit::EditOp, pos::PosInDocument, state::{EditorState, ReRenderContent}, viewport::ScrollCommand, row::RowVecExt};
+use super::{clipboard::copy_to_clipboard, content::EditorContent, cursor::Cursor, edit::EditOp, pos::PosInDocument, state::{EditorState, ReRenderContent}, viewport::ScrollCommand};
 
 
 pub fn process_event(event: &Event, state: &mut EditorState) -> ReRenderContent {
@@ -61,18 +61,20 @@ fn clipboard_command(event: &Event, state: &EditorState) -> EditCommand {
     state.selection().and_then(|(from, to)|
         match event {
             Key(Char('C'), CTRL) => {
-                let str = EditOp::lines_to_delete(&state.content, from, to).join(&state.content.delimiter);
-                copy_to_clipboard(str);
+                copy_selection_to_clipboard(&state.content, from, to);
                 None
             },
             Key(Char('X'), CTRL) => {
-                let str = EditOp::lines_to_delete(&state.content, from, to).join(&state.content.delimiter);
-                copy_to_clipboard(str);
+                copy_selection_to_clipboard(&state.content, from, to);
                 delete(from, to, &state.content)
             }
         _ => None
         }
     )
+}
+
+fn copy_selection_to_clipboard(content: &EditorContent, from: PosInDocument, to: PosInDocument) {
+    copy_to_clipboard(content.selected_text(from, to));
 }
 
 

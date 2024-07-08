@@ -1,4 +1,4 @@
-use super::{pos::PosInDocument, row::Row};
+use super::{pos::PosInDocument, row::{Row, RowVecExt}};
 
 pub const CRLF: &str = "\r\n";
 pub const LF: &str = "\n";
@@ -33,6 +33,25 @@ impl EditorContent {
 
     pub fn last_line_row(&self) -> usize {
         self.lines.len() - 1
+    }
+
+    pub fn selection(&self, (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Vec<Row> {
+        let mut selection = Vec::new();
+        let mut push = |line: &str| selection.push(Row::new(line));
+
+        if from_row == to_row {
+            push(&self.lines[from_row][from_col..to_col]);
+        } else {
+            push(&self.lines[from_row][from_col..]);
+            self.lines[from_row + 1..to_row].iter().for_each(|line| push(&line[..]));
+            push(&self.lines[to_row][..to_col]);
+        };
+
+        selection
+    }
+
+    pub fn selected_text(&self, from: PosInDocument, to: PosInDocument) -> String {
+        self.selection(from, to).join(&self.delimiter)
     }
 }
 
