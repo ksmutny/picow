@@ -22,4 +22,11 @@ mod selection_test {
         Key(Backspace, 0);
         "He▮y"
     );
+
+    edit_test!(
+        test_selection_replace_char:
+        "He▯llo Kitt▮y";
+        Key(Char('i'), 0);
+        "Hei▮y"
+    );
 }

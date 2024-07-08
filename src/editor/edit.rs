@@ -5,6 +5,7 @@ use super::{content::{split, EditorContent}, edit::EditOp::*, pos::PosInDocument
 pub enum EditOp {
     Insert { from: PosInDocument, lines: Vec<Row> },
     Delete { from: PosInDocument, lines: Vec<Row> },
+    Replace { from: PosInDocument, inserted_lines: Vec<Row>, deleted_lines: Vec<Row> },
 }
 
 impl EditOp {
@@ -16,10 +17,23 @@ impl EditOp {
         Delete { from, lines: Self::lines_to_delete(&content, from, to) }
     }
 
+    pub fn replace(content: &EditorContent, from: PosInDocument, to: PosInDocument, str: &str) -> Self {
+        Replace {
+            from,
+            inserted_lines: Self::lines_to_insert(str),
+            deleted_lines: Self::lines_to_delete(content, from, to)
+        }
+    }
+
     pub fn inverse(&self) -> Self {
         match self {
             Insert { from, lines } => Delete { from: *from, lines: lines.clone() },
             Delete { from, lines } => Insert { from: *from, lines: lines.clone() },
+            Replace { from, inserted_lines, deleted_lines } => Replace {
+                from: *from,
+                inserted_lines: deleted_lines.clone(),
+                deleted_lines: inserted_lines.clone()
+            },
         }
     }
 
@@ -46,6 +60,7 @@ impl EditOp {
         let (from, lines) = match self {
             Insert { from, lines } => (from, lines),
             Delete { from, lines } => (from, lines),
+            Replace { from, inserted_lines, .. } => (from, inserted_lines),
         };
 
         let (from_row, from_col) = from;
@@ -81,7 +96,11 @@ pub fn process(content: &mut EditorContent, edit_op: &EditOp) -> PosInDocument {
             content.lines.splice(from_row..=&to_row, vec![after_delete]);
 
             (*from_row, *from_col)
-        }
+        },
+        Replace { from, deleted_lines, inserted_lines } => {
+            process(content, &Delete { from: *from, lines: deleted_lines.clone() });
+            process(content, &Insert { from: *from, lines: inserted_lines.clone() })
+        },
     }
 }
 

@@ -77,7 +77,10 @@ fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
 
     match event {
         Key(ref key, modifiers) => match (key, modifiers) {
-            (Char(c), 0) => insert_char(cursor, *c),
+            (Char(c), 0) => match selection {
+                Some((from, to)) => replace_selection(content, from, to, &c.to_string()),
+                None => insert_char(cursor, *c)
+            },
             (Enter, 0) => insert_char(cursor, '\n'),
             (Backspace, 0) => match selection {
                 Some((from, to)) => delete_selection((from, to), content),
@@ -112,6 +115,10 @@ fn backspace(cursor: &Cursor, content: &EditorContent) -> EditCommand {
     cursor.move_left(content).and_then(|cursor_left| {
         delete(cursor_left.pos(), cursor.pos(), content)
     })
+}
+
+fn replace_selection(content: &EditorContent, from: PosInDocument, to: PosInDocument, str: &str) -> EditCommand {
+    Some(EditOp::replace(content, from, to, str))
 }
 
 fn insert(cursor: &Cursor, str: &str) -> EditCommand {
