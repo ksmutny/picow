@@ -6,6 +6,8 @@ use super::{content::EditorContent, cursor::Cursor, edit::EditOp, pos::PosInDocu
 pub fn process_event(event: &Event, state: &mut EditorState) -> ReRenderContent {
     if let Some((cursor, is_selection)) = cursor_command(event, state) {
         state.move_cursor(cursor, is_selection)
+    } else if is_select_all(event) {
+        state.select_all()
     } else if let Some(scroll_to) = scroll_command(event, state) {
         state.scroll(scroll_to)
     } else if is_undo(event) {
@@ -46,6 +48,11 @@ fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
     };
 
     cursor_command.map(|cursor| (cursor, matches!(event, Key(_, SHIFT))))
+}
+
+
+fn is_select_all(event: &Event) -> bool {
+    matches!(event, Key(Char('A'), CTRL))
 }
 
 

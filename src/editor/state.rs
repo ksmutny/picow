@@ -57,6 +57,13 @@ impl EditorState {
     }
 
 
+    pub fn select_all(&mut self) -> ReRenderContent {
+        self.selection_pos = Some((0, 0));
+        self.cursor = Cursor::from(self.content.last_line_end());
+        true
+    }
+
+
     pub fn scroll(&mut self, scroll_to: PosInDocument) -> ReRenderContent {
         let (top, left) = scroll_to;
         self.viewport.scroll(top, left);
