@@ -81,6 +81,19 @@ impl Row {
     }
 }
 
+pub trait RowVecExt {
+    fn join(&self, sep: &str) -> String;
+}
+
+impl RowVecExt for Vec<Row> {
+    fn join(&self, sep: &str) -> String {
+        self.iter()
+            .map(|row| row.bytes.as_str())
+            .collect::<Vec<&str>>()
+            .join(sep)
+    }
+}
+
 impl Index<Range<usize>> for Row {
     type Output = str;
 
@@ -156,4 +169,10 @@ mod test {
     test! { chat_idx_at_1: row("I💖kůň").char_idx_at(1) => 1 }
     test! { chat_idx_at_3: row("I💖kůň").char_idx_at(3) => 2 }
     test! { chat_idx_at_5: row("I💖kůň").char_idx_at(5) => 4 }
+
+    #[test]
+    fn join() {
+        let rows = vec![row("žlu"), row("ťoučký")];
+        assert_eq!(rows.join(""), "žluťoučký")
+    }
 }
