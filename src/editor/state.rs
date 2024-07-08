@@ -16,11 +16,11 @@ pub type ReRenderContent = bool;
 pub type Selection = Option<(PosInDocument, PosInDocument)>;
 
 impl EditorState {
-    pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: PosInDocument) -> Self {
+    pub fn new(content: EditorContent, viewport: Viewport, cursor_pos: PosInDocument, selection_pos: Option<PosInDocument>) -> Self {
         Self {
             content, viewport,
             cursor: Cursor::from(cursor_pos),
-            selection_pos: None,
+            selection_pos,
             undo_stack: LinkedList::new(),
             redo_stack: LinkedList::new(),
         }

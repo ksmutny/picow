@@ -103,7 +103,8 @@ pub fn parse_test_case(input: Vec<&str>) -> TestCase {
         state: EditorState::new(
             EditorContent::new(lines, "\n".to_string()),
             Viewport::new(left, top, width, height),
-            cursor_pos
+            cursor_pos,
+            None
         ),
         expected_cursor: expected_cursor.unwrap(),
         expected_scroll: expected_scroll.unwrap(),

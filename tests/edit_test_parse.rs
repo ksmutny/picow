@@ -5,10 +5,10 @@ mod edit_test_macros;
 use picow::editor::{content::{EditorContent, LF}, row::Row, state::EditorState, viewport::Viewport};
 
 pub fn state(lines: Vec<&str>) -> EditorState {
-    let (rows, cursor, _) = parse_rows(lines);
+    let (rows, cursor, selection_pos) = parse_rows(lines);
     let content = EditorContent::new(rows, s![LF]);
     let viewport = Viewport::new(0, 0, 80, 25);
-    EditorState::new(content, viewport, cursor)
+    EditorState::new(content, viewport, cursor, selection_pos)
 }
 
 fn parse_rows(input: Vec<&str>) -> (Vec<Row>, (usize, usize), Option<(usize, usize)>) {

@@ -36,7 +36,7 @@ fn init(file_name: &str) -> io::Result<u32> {
 }
 
 fn run_editor(content: EditorContent) -> io::Result<()> {
-    let mut state = EditorState::new(content, create_viewport().unwrap(), (0, 0));
+    let mut state = EditorState::new(content, create_viewport().unwrap(), (0, 0), None);
     event_loop(&mut state)
 }
 
