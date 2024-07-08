@@ -41,7 +41,7 @@ impl EditOp {
         split(str).0
     }
 
-    fn lines_to_delete(content: &EditorContent, (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Vec<Row> {
+    pub fn lines_to_delete(content: &EditorContent, (from_row, from_col): PosInDocument, (to_row, to_col): PosInDocument) -> Vec<Row> {
         let mut lines_to_delete = Vec::new();
         let mut push = |line: &str| lines_to_delete.push(Row::new(line));
 

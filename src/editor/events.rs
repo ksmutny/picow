@@ -1,6 +1,6 @@
 use crate::terminal::events::{Event::{self, *}, KeyCode::*, Mouse::*, MouseButton, MouseEvent::*, CTRL, SHIFT};
 
-use super::{content::EditorContent, cursor::Cursor, edit::EditOp, pos::PosInDocument, state::{EditorState, ReRenderContent}, viewport::ScrollCommand};
+use super::{clipboard::copy_to_clipboard, content::EditorContent, cursor::Cursor, edit::EditOp, pos::PosInDocument, state::{EditorState, ReRenderContent}, viewport::ScrollCommand, row::RowVecExt};
 
 
 pub fn process_event(event: &Event, state: &mut EditorState) -> ReRenderContent {
@@ -15,6 +15,8 @@ pub fn process_event(event: &Event, state: &mut EditorState) -> ReRenderContent 
     } else if is_redo(event) {
         state.redo()
     } else if let Some(edit_op) = edit_command(event, state) {
+        state.edit(edit_op)
+    } else if let Some(edit_op) = clipboard_command(event, state) {
         state.edit(edit_op)
     } else {
         false
@@ -53,6 +55,24 @@ fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
 
 fn is_select_all(event: &Event) -> bool {
     matches!(event, Key(Char('A'), CTRL))
+}
+
+fn clipboard_command(event: &Event, state: &EditorState) -> EditCommand {
+    state.selection().and_then(|(from, to)|
+        match event {
+            Key(Char('C'), CTRL) => {
+                let str = EditOp::lines_to_delete(&state.content, from, to).join(&state.content.delimiter);
+                copy_to_clipboard(str);
+                None
+            },
+            Key(Char('X'), CTRL) => {
+                let str = EditOp::lines_to_delete(&state.content, from, to).join(&state.content.delimiter);
+                copy_to_clipboard(str);
+                delete(from, to, &state.content)
+            }
+        _ => None
+        }
+    )
 }
 
 
