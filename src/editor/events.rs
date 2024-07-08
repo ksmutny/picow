@@ -75,31 +75,30 @@ fn edit_command(event: &Event, state: &EditorState) -> EditCommand {
     let EditorState { ref content, ref cursor, .. } = state;
     let selection = state.selection();
 
-    match event {
-        Key(ref key, modifiers) => match (key, modifiers) {
-            (Char(c), 0) => match selection {
-                Some((from, to)) => replace_selection(content, from, to, &c.to_string()),
-                None => insert_char(cursor, *c)
+    match selection {
+        Some((from, to)) => match event {
+            Key(ref key, modifiers) => match (key, modifiers) {
+                (Char(c), 0) => replace(content, from, to, &c.to_string()),
+                (Enter, 0) => replace(content, from, to, "\n"),
+                (Backspace, 0) => delete(from, to, content),
+                (Delete, 0) => delete(from, to, content),
+                _ => None
             },
-            (Enter, 0) => match selection {
-                Some((from, to)) => replace_selection(content, from, to, "\n"),
-                None => insert_char(cursor, '\n')
-            },
-            (Backspace, 0) => match selection {
-                Some((from, to)) => delete_selection((from, to), content),
-                None => backspace(cursor, content)
-            },
-            (Delete, 0) => match selection {
-                Some((from, to)) => delete_selection((from, to), content),
-                None => delete_char(cursor, content)
-            },
+            Paste(s) => replace(content, from, to, &s),
             _ => None
         },
-        Paste(s) => match selection {
-            Some((from, to)) => replace_selection(content, from, to, &s),
-            None => insert(cursor, &s)
-        },
-        _ => None
+        None => match event {
+            Key(ref key, modifiers) => match (key, modifiers) {
+                (Char(c), 0) => insert_char(cursor, *c),
+                (Enter, 0) => insert_char(cursor, '\n'),
+                (Backspace, 0) => backspace(cursor, content),
+                (Delete, 0) => delete_char(cursor, content),
+                _ => None
+            },
+            Paste(s) => insert(cursor, &s),
+            _ => None
+
+        }
     }
 }
 
@@ -113,18 +112,10 @@ fn delete_char(cursor: &Cursor, content: &EditorContent) -> EditCommand {
     })
 }
 
-fn delete_selection((selection_from, selection_to): (PosInDocument, PosInDocument), content: &EditorContent) -> EditCommand {
-    delete(selection_from, selection_to, content)
-}
-
 fn backspace(cursor: &Cursor, content: &EditorContent) -> EditCommand {
     cursor.move_left(content).and_then(|cursor_left| {
         delete(cursor_left.pos(), cursor.pos(), content)
     })
-}
-
-fn replace_selection(content: &EditorContent, from: PosInDocument, to: PosInDocument, str: &str) -> EditCommand {
-    Some(EditOp::replace(content, from, to, str))
 }
 
 fn insert(cursor: &Cursor, str: &str) -> EditCommand {
@@ -133,4 +124,8 @@ fn insert(cursor: &Cursor, str: &str) -> EditCommand {
 
 fn delete(from: PosInDocument, to: PosInDocument, content: &EditorContent) -> EditCommand {
     Some(EditOp::delete(content, from, to))
+}
+
+fn replace(content: &EditorContent, from: PosInDocument, to: PosInDocument, str: &str) -> EditCommand {
+    Some(EditOp::replace(content, from, to, str))
 }
