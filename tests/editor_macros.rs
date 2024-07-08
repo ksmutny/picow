@@ -13,7 +13,7 @@ macro_rules! test_editor {
 
             assert_eq!(test_case.state.cursor.pos(), test_case.expected_cursor);
             assert_eq!(test_case.state.viewport.pos(), test_case.expected_scroll);
-            assert_eq!(test_case.state.selection_pos, test_case.expected_selection);
+            assert_eq!(test_case.state.selection().map(|s| s.0), test_case.expected_selection);
         }
     };
 }

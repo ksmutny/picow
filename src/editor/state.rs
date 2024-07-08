@@ -7,7 +7,7 @@ pub struct EditorState {
     pub content: EditorContent,
     pub viewport: Viewport,
     pub cursor: Cursor,
-    pub selection_pos: Option<PosInDocument>,
+    selection_pos: Option<PosInDocument>,
     undo_stack: LinkedList<EditOp>,
     redo_stack: LinkedList<EditOp>,
 }
