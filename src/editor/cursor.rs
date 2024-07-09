@@ -23,10 +23,10 @@ impl Cursor {
     }
 
     pub fn move_to(&self, content: &EditorContent, pos: PosInDocument) -> NavigationCommand {
-        self.move_to_from(content, pos, None)
+        self.move_to_set_furthest_col(content, pos, None)
     }
 
-    fn move_to_from(&self, content: &EditorContent, pos: PosInDocument, furthest_col: Option<usize>) -> NavigationCommand {
+    fn move_to_set_furthest_col(&self, content: &EditorContent, pos: PosInDocument, furthest_col: Option<usize>) -> NavigationCommand {
         let new_cursor_pos = Self::within_text(content, pos);
         self.move_cmd(new_cursor_pos, furthest_col)
     }
@@ -61,7 +61,7 @@ impl Cursor {
         let mono_col = self.furthest_col.unwrap_or(current_line.mono_col_at(self.col));
         let new_col = new_line.char_idx_at(mono_col);
 
-        self.move_to_from(content, (new(self.row), new_col), Some(mono_col))
+        self.move_to_set_furthest_col(content, (new(self.row), new_col), Some(mono_col))
     }
 
     pub fn move_left(&self, content: &EditorContent) -> NavigationCommand {
