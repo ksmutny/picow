@@ -41,12 +41,10 @@ fn close_alternate_screen(console_mode: u32) -> io::Result<()> {
     winapi::restore_console_mode(console_mode)
 }
 
-pub type Coordinates = (u16, u16);
 
-pub fn terminal_size() -> io::Result<Coordinates> {
+pub fn terminal_size() -> io::Result<(u16, u16)> {
     winapi::terminal_size()
 }
-
 
 pub fn read_event() -> io::Result<Event> {
     reader::read_event()
