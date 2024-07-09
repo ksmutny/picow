@@ -1,11 +1,11 @@
-use std::{io, cmp::min};
+use std::cmp::min;
 
-use crate::{s, terminal::{buffer::CommandBuffer, commands::Command::{self, *}}};
+use crate::{s, terminal::commands::Command::{self, *}};
 use super::{row::Row, state::{EditorState, Selection}, viewport::Viewport};
 
 
-pub fn render(state: &EditorState, rerender_content: bool) -> io::Result<()> {
-    exec(|commands| {
+pub fn render(state: &EditorState, rerender_content: bool) -> Vec<Command> {
+    buffer(|commands| {
         hide_cursor(commands);
         if rerender_content {
             render_content(state, commands);
@@ -15,13 +15,13 @@ pub fn render(state: &EditorState, rerender_content: bool) -> io::Result<()> {
     })
 }
 
-fn exec<F>(mut action: F) -> io::Result<()>
+fn buffer<F>(mut action: F) -> Vec<Command>
 where
     F: FnMut(&mut Vec<Command>) -> (),
 {
     let mut commands = Vec::<Command>::new();
     action(&mut commands);
-    commands.execute()
+    commands
 }
 
 fn render_content(state: &EditorState, commands: &mut Vec<Command>) {
