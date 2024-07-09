@@ -45,11 +45,14 @@ fn cursor_command(event: &Event, state: &EditorState) -> CursorCommand {
 
             _ => None
         },
-        Mouse(Button(MouseButton::Left, Press, column, row)) => cursor.move_to(content, viewport.to_absolute((row, column))),
+        Mouse(Button(MouseButton::Left, Press | Drag, column, row)) => cursor.move_to(content, viewport.to_absolute((row, column))),
         _ => None
     };
 
-    cursor_command.map(|cursor| (cursor, matches!(event, Key(_, SHIFT))))
+    cursor_command.map(|cursor| (
+        cursor,
+        matches!(event, Key(_, SHIFT)) || matches!(event, Mouse(Button(_, Drag, _, _)))
+    ))
 }
 
 
