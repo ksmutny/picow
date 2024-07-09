@@ -7,26 +7,29 @@ use crate::{
 
 
 pub fn start(file_name: &str) -> io::Result<()> {
-    let content = read_content(file_name)?;
+    let mut state = create_editor_state(file_name)?;
 
     terminal::on_alternate_screen(file_name, ||
-        run_editor(content)
+        event_loop(&mut state)
     )
+}
+
+
+fn create_editor_state(file_name: &str) -> io::Result<EditorState> {
+    let content = read_content(file_name)?;
+    let viewport = create_viewport()?;
+
+    Ok(EditorState::new(content, viewport, (0, 0), None))
 }
 
 fn read_content(file_name: &str) -> io::Result<EditorContent> {
     let file_content = fs::read_to_string(file_name)?;
-    let editor_content = EditorContent::parse(&file_content);
 
-    Ok(editor_content)
-}
-
-fn run_editor(content: EditorContent) -> io::Result<()> {
-    let mut state = EditorState::new(content, create_viewport().unwrap(), (0, 0), None);
-    event_loop(&mut state)
+    Ok(EditorContent::parse(&file_content))
 }
 
 fn create_viewport() -> io::Result<Viewport> {
     let (width, height) = terminal::terminal_size()?;
+
     Ok(Viewport::new(0, 0, width, height - 1))
 }
