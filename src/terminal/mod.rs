@@ -1,16 +1,15 @@
 mod ansi_in;
 mod ansi_out;
 mod buffer;
+mod reader;
 mod winapi;
 
 pub mod commands;
 pub mod events;
-pub mod reader;
 
 use std::io;
-use commands::Command;
 
-use self::{buffer::CommandBuffer, commands::Command::*};
+use self::{buffer::CommandBuffer, commands::Command::{self, *}, events::Event};
 
 
 pub fn on_alternate_screen(window_title: &str, run: impl FnOnce() -> io::Result<()>) -> io::Result<()> {
@@ -46,6 +45,11 @@ pub type Coordinates = (u16, u16);
 
 pub fn terminal_size() -> io::Result<Coordinates> {
     winapi::terminal_size()
+}
+
+
+pub fn read_event() -> io::Result<Event> {
+    reader::read_event()
 }
 
 pub fn output(commands: Vec<Command>) -> io::Result<()> {

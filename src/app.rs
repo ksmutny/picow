@@ -2,7 +2,7 @@ use std::{fs, io};
 
 use crate::{
     editor::{content::EditorContent, events, renderer, state::EditorState, viewport::Viewport},
-    terminal::{self, events::{Event::Key, KeyCode::Esc}, reader::read_event}
+    terminal::{self, events::{Event::Key, KeyCode::Esc}}
 };
 
 
@@ -42,7 +42,7 @@ fn event_loop(state: &mut EditorState) -> io::Result<()> {
             renderer::render(&state, rerender_content)
         )?;
 
-        match read_event()? {
+        match terminal::read_event()? {
             Key(Esc, 0) => break Ok(()),
             event => rerender_content = events::process_event(&event, state)
         }
