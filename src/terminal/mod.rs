@@ -1,13 +1,15 @@
 mod ansi_in;
 mod ansi_out;
+mod buffer;
 mod winapi;
 
-pub mod buffer;
 pub mod commands;
 pub mod events;
 pub mod reader;
 
 use std::io;
+use commands::Command;
+
 use self::{buffer::CommandBuffer, commands::Command::*};
 
 
@@ -44,4 +46,8 @@ pub type Coordinates = (u16, u16);
 
 pub fn terminal_size() -> io::Result<Coordinates> {
     winapi::terminal_size()
+}
+
+pub fn output(commands: Vec<Command>) -> io::Result<()> {
+    commands.execute()
 }
