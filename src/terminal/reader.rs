@@ -1,25 +1,25 @@
 use std::{io::{self, Read}, str};
 
-use super::{ansi_in::{self, parse}, events::Event};
+use super::{ansi_in, events::Event};
 
-
-pub trait Reader {
-    fn read(&mut self) -> io::Result<&str>;
-}
 
 pub fn read_event() -> io::Result<Event> {
     let mut stdin = StdinReader::new();
 
     loop {
         let input = read_cmd(&mut stdin)?;
-        match parse(&input) {
+        match ansi_in::parse(&input) {
             Ok((_, event)) => return Ok(event),
             Err(_) => continue,
         }
     }
 }
 
-pub fn read_cmd<'a, R: Reader>(reader: &'a mut R) -> io::Result<String> {
+trait Reader {
+    fn read(&mut self) -> io::Result<&str>;
+}
+
+fn read_cmd<'a, R: Reader>(reader: &'a mut R) -> io::Result<String> {
     let input = reader.read()?;
     let mut buffer = String::from(input);
 
@@ -36,12 +36,12 @@ pub fn read_cmd<'a, R: Reader>(reader: &'a mut R) -> io::Result<String> {
 }
 
 
-pub struct StdinReader {
+struct StdinReader {
     buffer: [u8; 1024],
 }
 
 impl StdinReader {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self { buffer: [0; 1024] }
     }
 }
@@ -60,7 +60,7 @@ mod tests {
 
     use super::*;
 
-    pub struct MockReader<'a> {
+    struct MockReader<'a> {
         pub data: VecDeque<&'a str>,
     }
 
