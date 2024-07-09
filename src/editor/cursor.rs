@@ -5,29 +5,21 @@ use super::{content::EditorContent, pos::PosInDocument};
 
 #[derive(PartialEq, Debug)]
 pub struct Cursor {
-    pub row: usize,
-    pub col: usize,
+    row: usize,
+    col: usize,
     furthest_col: Option<usize>
 }
 
-pub type NavigationCommand = Option<Cursor>;
+type NavigationCommand = Option<Cursor>;
 
 
 impl Cursor {
-    pub fn new(row: usize, col: usize) -> Self {
-        Self { row, col, furthest_col: None }
-    }
-
     pub fn from((row, col): PosInDocument) -> Self {
-        Self::new(row, col)
+        Self { row, col, furthest_col: None }
     }
 
     pub fn pos(&self) -> PosInDocument {
         (self.row, self.col)
-    }
-
-    pub fn is_at(&self, row: usize, col: usize) -> bool {
-        self.row == row && self.col == col
     }
 
     pub fn move_to(&self, content: &EditorContent, pos: PosInDocument) -> NavigationCommand {
@@ -46,7 +38,7 @@ impl Cursor {
     }
 
     fn move_cmd(&self, (row, col): PosInDocument, furthest_col: Option<usize>) -> NavigationCommand {
-        if self.is_at(row, col) { None } else { Some(Cursor { row, col, furthest_col } ) }
+        if self.pos() == (row, col) { None } else { Some(Cursor { row, col, furthest_col } ) }
     }
 
     pub fn move_up(&self, content: &EditorContent, n: usize) -> NavigationCommand {
