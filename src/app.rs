@@ -1,8 +1,8 @@
 use std::{fs, io};
 
 use crate::{
-    editor::{content::EditorContent, event_loop, state::EditorState, viewport::Viewport},
-    terminal
+    editor::{content::EditorContent, events, renderer, state::EditorState, viewport::Viewport},
+    terminal::{self, events::{Event::Key, KeyCode::Esc}, reader::read_event}
 };
 
 
@@ -32,4 +32,17 @@ fn create_viewport() -> io::Result<Viewport> {
     let (width, height) = terminal::terminal_size()?;
 
     Ok(Viewport::new(0, 0, width, height - 1))
+}
+
+
+fn event_loop(state: &mut EditorState) -> io::Result<()> {
+    let mut rerender_content = true;
+    loop {
+        renderer::render(&state, rerender_content)?;
+
+        match read_event()? {
+            Key(Esc, 0) => break Ok(()),
+            event => rerender_content = events::process_event(&event, state)
+        }
+    }
 }
