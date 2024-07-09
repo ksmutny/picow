@@ -1,6 +1,6 @@
 use std::{io, cmp::min};
 
-use crate::{s, terminal::{buffer::CommandBuffer, commands::Command::*}};
+use crate::{s, terminal::{buffer::CommandExecutor, commands::Command::{self, *}}};
 use super::{row::Row, state::{EditorState, Selection}, viewport::Viewport};
 
 
@@ -17,14 +17,14 @@ pub fn render(state: &EditorState, rerender_content: bool) -> io::Result<()> {
 
 fn exec<F>(mut action: F) -> io::Result<()>
 where
-    F: FnMut(&mut CommandBuffer) -> (),
+    F: FnMut(&mut Vec<Command>) -> (),
 {
-    let mut commands = CommandBuffer::new();
+    let mut commands = Vec::<Command>::new();
     action(&mut commands);
     commands.execute()
 }
 
-fn render_content(state: &EditorState, commands: &mut CommandBuffer) {
+fn render_content(state: &EditorState, commands: &mut Vec<Command>) {
     let selection = state.selection();
     let visible_rows = visible_rows(state);
     let visible_rows_count = visible_rows.len();
@@ -45,18 +45,18 @@ fn visible_rows(state: &EditorState) -> &[Row] {
     &state.content.lines[top..bottom]
 }
 
-fn render_row(i: usize, row: &Row, viewport: &Viewport, selection: Selection, commands: &mut CommandBuffer) {
+fn render_row(i: usize, row: &Row, viewport: &Viewport, selection: Selection, commands: &mut Vec<Command>) {
     let (pre_selection, selected, post_selection) = visible_row_part(i, row, viewport, selection);
 
-    commands.queue(MoveTo(1, 1 + i as u16));
-    commands.queue(Print(pre_selection));
+    commands.push(MoveTo(1, 1 + i as u16));
+    commands.push(Print(pre_selection));
 
-    commands.queue(SetBackgroundColor(100));
-    commands.queue(Print(selected));
-    commands.queue(SetBackgroundColor(0));
+    commands.push(SetBackgroundColor(100));
+    commands.push(Print(selected));
+    commands.push(SetBackgroundColor(0));
 
-    commands.queue(Print(post_selection));
-    commands.queue(ClearToEndOfLine);
+    commands.push(Print(post_selection));
+    commands.push(ClearToEndOfLine);
 }
 
 fn visible_row_part(i: usize, row: &Row, viewport: &Viewport, selection: Selection) -> (String, String, String) {
@@ -84,33 +84,33 @@ fn visible_row_part(i: usize, row: &Row, viewport: &Viewport, selection: Selecti
     }
 }
 
-fn clear_row(row: u16, commands: &mut CommandBuffer) {
-    commands.queue(MoveTo(1, row));
-    commands.queue(ClearLine);
+fn clear_row(row: u16, commands: &mut Vec<Command>) {
+    commands.push(MoveTo(1, row));
+    commands.push(ClearLine);
 }
 
-fn render_status_bar(state: &EditorState, commands: &mut CommandBuffer) {
+fn render_status_bar(state: &EditorState, commands: &mut Vec<Command>) {
     let Viewport { top, width, height, .. } = state.viewport;
     let (row, col) = state.cursor.pos();
 
     let status = format!("{}x{} | {} {} | {} | {}", width, height, row + 1, col + 1, top + 1, delimiter_label(&state.content.delimiter));
 
     clear_row(state.viewport.height + 1, commands);
-    commands.queue(Print(status));
+    commands.push(Print(status));
 }
 
-fn hide_cursor(commands: &mut CommandBuffer) {
-    commands.queue(HideCursor)
+fn hide_cursor(commands: &mut Vec<Command>) {
+    commands.push(HideCursor)
 }
 
-fn render_cursor(state: &EditorState, commands: &mut CommandBuffer) {
+fn render_cursor(state: &EditorState, commands: &mut Vec<Command>) {
     let (row, col) = state.cursor.pos();
 
     if state.viewport.cursor_within((row, col)) {
         let col_2 = state.content.lines[row].mono_col_at(col);
         let (row_rel, col_rel) = state.viewport.to_relative((row, col_2));
-        commands.queue(MoveTo(col_rel, row_rel));
-        commands.queue(ShowCursor);
+        commands.push(MoveTo(col_rel, row_rel));
+        commands.push(ShowCursor);
     }
 }
 

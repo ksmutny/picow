@@ -4,30 +4,6 @@ use super::ansi_out::ansi;
 use super::commands::Command;
 
 
-pub struct CommandBuffer {
-    commands: Vec<Command>,
-}
-
-impl CommandBuffer {
-    pub fn new() -> Self {
-        Self { commands: Vec::new() }
-    }
-
-    pub fn queue(&mut self, command: Command) {
-        self.commands.push(command);
-    }
-
-    fn clear(&mut self) {
-        self.commands.clear();
-    }
-
-    pub fn execute(&mut self) -> io::Result<()> {
-        self.commands.execute()?;
-        self.clear();
-        Ok(())
-    }
-}
-
 pub trait CommandExecutor {
     fn queue(&self) -> io::Result<()>;
     fn execute(&self) -> io::Result<()>;
