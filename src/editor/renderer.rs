@@ -1,6 +1,6 @@
 use std::{io, cmp::min};
 
-use crate::{s, terminal::{buffer::CommandExecutor, commands::Command::{self, *}}};
+use crate::{s, terminal::{buffer::CommandBuffer, commands::Command::{self, *}}};
 use super::{row::Row, state::{EditorState, Selection}, viewport::Viewport};
 
 

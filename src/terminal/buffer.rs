@@ -4,7 +4,7 @@ use super::ansi_out::ansi;
 use super::commands::Command;
 
 
-pub trait CommandExecutor {
+pub trait CommandBuffer {
     fn queue(&self) -> io::Result<()>;
 
     fn execute(&self) -> io::Result<()> {
@@ -13,13 +13,13 @@ pub trait CommandExecutor {
     }
 }
 
-impl CommandExecutor for Command {
+impl CommandBuffer for Command {
     fn queue(&self) -> io::Result<()> {
         write!(std::io::stdout(), "{}", ansi(&self))
     }
 }
 
-impl CommandExecutor for Vec<Command> {
+impl CommandBuffer for Vec<Command> {
     fn queue(&self) -> io::Result<()> {
         for command in self {
             command.queue()?;

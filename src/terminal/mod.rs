@@ -8,7 +8,7 @@ pub mod events;
 pub mod reader;
 
 use std::io;
-use self::{buffer::CommandExecutor, commands::Command::*};
+use self::{buffer::CommandBuffer, commands::Command::*};
 
 
 pub fn on_alternate_screen(window_title: &str, run: impl FnOnce() -> io::Result<()>) -> io::Result<()> {
