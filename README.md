@@ -13,15 +13,12 @@ picow <file-name>
 ```
 
 ## Supported shortcuts
-| Shortcut |             |
-| ---------|-------------|
-| Ctrl+S   | Save file   |
-| Ctrl+C   | Copy        |
-| Ctrl+V   | Paste       |
-| Ctrl+X   | Cut         |
-| Ctrl+A   | Selectl all |
-| Ctrl+Z   | Undo        |
-| Ctrl+Y   | Redo        |
+| Shortcut                 |                    |
+| -------------------------|--------------------|
+| Ctrl+S                   | Save file          |
+| Ctrl+C / Ctrl+X / Ctrl+V | Copy / Cut / Paste |
+| Ctrl+A                   | Select all         |
+| Ctrl+Z / Ctrl+Y          | Undo / Redo        |
 
 ## What's in the name?
 PicoW has nothing to do with UNIX [pico](https://en.wikipedia.org/wiki/Pico_(text_editor)) editor.
