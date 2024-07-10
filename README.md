@@ -20,6 +20,8 @@ picow <file-name>
 | Ctrl+V   | Paste       |
 | Ctrl+X   | Cut         |
 | Ctrl+A   | Selectl all |
+| Ctrl+Z   | Undo        |
+| Ctrl+Y   | Redo        |
 
 ## What's in the name?
 PicoW has nothing to do with UNIX [pico](https://en.wikipedia.org/wiki/Pico_(text_editor)) editor.
