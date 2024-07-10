@@ -53,6 +53,10 @@ impl EditorContent {
     pub fn selected_text(&self, from: PosInDocument, to: PosInDocument) -> String {
         self.selection(from, to).join(&self.delimiter)
     }
+
+    pub fn to_string(&self) -> String {
+        self.lines.join(&self.delimiter)
+    }
 }
 
 
